@@ -82,12 +82,11 @@ body:not(.dark) .fog-overlay{background:linear-gradient(to bottom,#1a2a1a 0%,#1a
 .cfg-row{display:grid;grid-template-columns:repeat(4,auto);gap:8px 14px;justify-content:center;align-items:start;margin-top:2px;}
 .cfg-row .cfg-extras{grid-column:1/-1;display:flex;gap:12px;align-items:center;justify-content:center;margin-top:2px;}
 @media(max-width:640px){
-  .cfg-row{grid-template-columns:repeat(2,1fr);}
+  .cfg-row{grid-template-columns:1fr;}
   .cfg-row .delay-wrap,.cfg-row .cg{width:100%;}
   .cfg-range{width:100%!important;flex:1;}
 }
 @media(max-width:360px){
-  .cfg-row{grid-template-columns:1fr;}
   .cg label{font-size:11px;}
   .cv{font-size:13px;}
 }
@@ -274,6 +273,33 @@ body.dark .ch-fin-cell{background:rgba(255,255,255,.03);}
 .ch-advice .adv-head{font-size:13px;font-weight:700;color:#22c55e;margin-bottom:4px;}
 
 .chart-close-bottom{width:100%;font-size:14px;margin-top:8px;}
+/* FONT SIZE — JS-driven scaling, CSS just handles grid reflow */
+.fs-sel{display:flex;align-items:center;gap:2px;}
+.fs-btn{background:none;border:1px solid var(--border2);border-radius:6px;padding:2px 6px;cursor:pointer;font-weight:700;color:var(--text3);transition:all .15s;line-height:1;font-family:'Outfit',sans-serif;}
+.fs-btn:hover{border-color:#f97316;color:#f97316;}
+.fs-btn.fs-active{border-color:#f97316;color:#f97316;background:rgba(249,115,22,.12);}
+.fs-btn-s{font-size:12px;}
+.fs-btn-m{font-size:15px;}
+.fs-btn-l{font-size:18px;}
+
+/* Grid reflows when font is scaled (class added by JS) */
+html.fs-m .cfg-row,
+html.fs-l .cfg-row{grid-template-columns:1fr !important;}
+html.fs-l .md-grid,
+html.fs-l .ch-params,
+html.fs-l .ch-fin-grid,
+html.fs-l .ag,
+html.fs-l .wctrl{grid-template-columns:1fr !important;}
+html.fs-m .md-grid,
+html.fs-m .ch-params,
+html.fs-m .ch-fin-grid{grid-template-columns:1fr !important;}
+html.fs-m .cfg-row .delay-wrap,
+html.fs-m .cfg-row .cg,
+html.fs-l .cfg-row .delay-wrap,
+html.fs-l .cfg-row .cg{width:100%;}
+html.fs-m .cfg-range,
+html.fs-l .cfg-range{width:100%!important;flex:1;}
+
 .btn-export{background:var(--bg3);color:var(--text2);border:1px solid var(--border2);margin-top:8px;}
 .btn-export:hover{background:rgba(128,128,128,.12);}
 </style>
@@ -286,6 +312,11 @@ body.dark .ch-fin-cell{background:rgba(255,255,255,.03);}
 <!-- #1 Lang & Theme toggle inside welcome -->
 <div class="wlang">
   <button class="icon-btn" id="wThemeBtn">☀</button>
+  <div class="fs-sel" id="wFsSel">
+    <button class="fs-btn fs-btn-s fs-active" data-fs="s" title="Small">A</button>
+    <button class="fs-btn fs-btn-m" data-fs="m" title="Medium">A</button>
+    <button class="fs-btn fs-btn-l" data-fs="l" title="Large">A</button>
+  </div>
   <div style="display:flex;gap:6px;">
     <button class="lang-btn active" id="wBtnEN" title="English">🇬🇧</button>
     <button class="lang-btn" id="wBtnTR" title="Türkçe">🇹🇷</button>
@@ -323,6 +354,11 @@ body.dark .ch-fin-cell{background:rgba(255,255,255,.03);}
   <div class="hrow">
     <div class="hleft">
       <button class="icon-btn" id="themeBtn">☀</button>
+      <div class="fs-sel" id="fsSel">
+        <button class="fs-btn fs-btn-s fs-active" data-fs="s" title="Small">A</button>
+        <button class="fs-btn fs-btn-m" data-fs="m" title="Medium">A</button>
+        <button class="fs-btn fs-btn-l" data-fs="l" title="Large">A</button>
+      </div>
     </div>
     <div class="hcenter">
       <h1>Bullwhip Effect Simulator <span class="ver">v0.8.5</span></h1>
@@ -427,6 +463,11 @@ body.dark .ch-fin-cell{background:rgba(255,255,255,.03);}
       <div class="hrow" style="margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:10px;">
         <div class="hleft">
           <button class="icon-btn" id="chThemeBtn">☀</button>
+          <div class="fs-sel" id="chFsSel">
+            <button class="fs-btn fs-btn-s fs-active" data-fs="s" title="Small">A</button>
+            <button class="fs-btn fs-btn-m" data-fs="m" title="Medium">A</button>
+            <button class="fs-btn fs-btn-l" data-fs="l" title="Large">A</button>
+          </div>
         </div>
         <div class="hright">
           <div style="display:flex;gap:3px;">
@@ -735,6 +776,64 @@ function toggleTheme(){
 }
 
 // ═══════════════════════════════════════════════════════════════
+// FONT SIZE — direct element scaling (works on ALL devices incl. iPad)
+// ═══════════════════════════════════════════════════════════════
+var currentFS='s';
+var originalFontSizes=null; // cached on first scale
+
+function cacheOriginalFontSizes(){
+  if(originalFontSizes) return;
+  originalFontSizes=[];
+  var els=document.querySelectorAll('body *:not(canvas):not(script):not(style)');
+  els.forEach(function(el){
+    var cs=window.getComputedStyle(el);
+    originalFontSizes.push({el:el, fs:parseFloat(cs.fontSize), lh:cs.lineHeight});
+  });
+}
+
+function setFontSize(size){
+  currentFS=size;
+  var html=document.documentElement;
+  html.classList.remove('fs-m','fs-l');
+  if(size==='m') html.classList.add('fs-m');
+  if(size==='l') html.classList.add('fs-l');
+
+  // Sync all buttons
+  document.querySelectorAll('.fs-btn').forEach(function(btn){
+    btn.classList.toggle('fs-active', btn.getAttribute('data-fs')===size);
+  });
+
+  // Scale multiplier: s=1.0, m=1.25, l=1.5
+  var scale=size==='l'?1.5:size==='m'?1.25:1.0;
+
+  cacheOriginalFontSizes();
+  originalFontSizes.forEach(function(item){
+    if(scale===1.0){
+      item.el.style.fontSize='';
+      item.el.style.lineHeight='';
+    } else {
+      item.el.style.fontSize=(item.fs*scale)+'px';
+      // keep line-height proportional
+      if(item.lh && item.lh!=='normal'){
+        var lhPx=parseFloat(item.lh);
+        if(!isNaN(lhPx)) item.el.style.lineHeight=(lhPx*scale)+'px';
+      }
+    }
+  });
+
+  if(typeof resizeCanvas==='function') resizeCanvas(false);
+  try{ localStorage.setItem('bw_fs', size); }catch(e){}
+}
+
+// Delegate clicks on all font-size selectors
+document.addEventListener('click', function(e){
+  var btn=e.target.closest('.fs-btn');
+  if(btn && btn.getAttribute('data-fs')){
+    setFontSize(btn.getAttribute('data-fs'));
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
 // LANGUAGE — sets both main header toggles AND welcome toggles
 // ═══════════════════════════════════════════════════════════════
 function setLang(l){
@@ -843,7 +942,7 @@ var audio={
     try{ this.warnLfo.stop(); this.warnOsc.stop(); }catch(e){}
     this.warnOn=false; this.warnOsc=null; this.warnGain=null; this.warnLfo=null;
   },
-  // Tick-based engine: repeating click sounds — faster speed = higher tick rate = F1-like
+  // Tick-based engine: repeating click sounds — faster speed = higher pitch + rate
   tickSpeed:1, tickRunning:false, tickTimer:null,
   startEngine:function(){
     if(this.tickRunning||!sndCb.checked||!this.ctx) return;
@@ -855,16 +954,18 @@ var audio={
     if(sndCb.checked && self.ctx){
       try{
         var o=self.ctx.createOscillator(), g=self.ctx.createGain();
-        o.type='triangle'; o.frequency.value=160+self.tickSpeed*12;
+        // Tone frequency: 50Hz (slow=deep rumble) → 200Hz (fast=high purr)
+        var freq=50+(self.tickSpeed-1)*21.4; // speed1→50Hz, speed8→200Hz
+        o.type='triangle'; o.frequency.value=freq;
         g.gain.setValueAtTime(0.10,self.ctx.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.001,self.ctx.currentTime+0.022);
+        g.gain.exponentialRampToValueAtTime(0.001,self.ctx.currentTime+0.025);
         o.connect(g); g.connect(self.ctx.destination);
-        o.start(); o.stop(self.ctx.currentTime+0.022);
+        o.start(); o.stop(self.ctx.currentTime+0.025);
       }catch(e){}
     }
-    // speed 1 → ~340ms interval, speed 8 → ~18ms (F1)
-    var ms=Math.round(340/Math.pow(self.tickSpeed,1.75));
-    ms=Math.max(15,Math.min(340,ms));
+    // Tick interval: speed 1→120ms (~8 ticks/sec), speed 8→25ms (~40 ticks/sec)
+    var ms=Math.round(120-(self.tickSpeed-1)*13.6);
+    ms=Math.max(25,Math.min(120,ms));
     self.tickTimer=setTimeout(function(){ self._doTick(); },ms);
   },
   updateEngine:function(speed){ this.tickSpeed=Math.max(1,speed); },
@@ -1785,10 +1886,6 @@ document.querySelectorAll('.info-btn').forEach(function(btn){
 // PDF EXPORT — opens styled printable page, user prints to PDF
 // ═══════════════════════════════════════════════════════════════
 function exportLearnings(){
-  var namePrompt = lang==='tr'?'Rapor için adınızı girin:':'Enter your name for the report:';
-  var name = prompt(namePrompt, lang==='tr'?'Öğrenci':'Student');
-  if(name===null||name==='') return;
-
   var lastRun = G.results[G.results.length-1];
   if(!lastRun) return;
 
@@ -1807,29 +1904,6 @@ function exportLearnings(){
   actRMS=Math.sqrt(actRMS/G.pathTrace.length);
   var ratio=demRMS>1?(actRMS/demRMS):1;
 
-  // Over/Under Stock frames
-  var raw=G.pathTrace;
-  var step=Math.max(1,Math.floor(raw.length/800));
-  var N=0, overFrames=0, underFrames=0;
-  for(var i=0;i<raw.length;i+=step){
-    N++;
-    var pt=raw[i];
-    var seg=(pt.worldSeg>=0 && pt.worldSeg<G.road.length)?G.road[pt.worldSeg]:null;
-    if(pt.isOff && seg){
-      if(pt.x > seg.ox) overFrames++;
-      else underFrames++;
-    }
-  }
-
-  // Financial Outcome
-  var baseRevenue=1000000;
-  var overPct=overFrames/Math.max(1,N);
-  var underPct=underFrames/Math.max(1,N);
-  var overCost=Math.round(overPct*baseRevenue*0.6); 
-  var underCost=Math.round(underPct*baseRevenue*1.2);
-  var netProfit=baseRevenue-overCost-underCost;
-  var curr=lang==='tr'?'₺':'$';
-
   // Real-world param translations
   var delayDays=lastRun.dly;
   var delayReal=delayDays===0?(lang==='tr'?'Gerçek zamanlı':'Real-time'):
@@ -1843,101 +1917,82 @@ function exportLearnings(){
   var dateStr=today.toLocaleDateString(lang==='tr'?'tr-TR':'en-US',{year:'numeric',month:'long',day:'numeric'});
 
   var isEN=lang==='en';
-  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+(isEN?'Bullwhip Effect Report':'Kamçı Etkisi Raporu')+'</title>';
-  html+='<style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;color:#222;padding:15px 30px;max-width:850px;margin:0 auto;line-height:1.3;font-size:11px;}';
-  html+='h1{color:#d35400;font-size:18px;text-align:center;margin-bottom:2px;font-family:Georgia,serif;}';
-  html+='.subtitle{text-align:center;color:#666;font-size:12px;margin-bottom:2px;}';
-  html+='.date{text-align:center;color:#999;font-size:10px;margin-bottom:10px;}';
-  html+='h2{color:#d35400;font-size:13px;margin:8px 0 4px;border-bottom:1px solid #ddd;padding-bottom:2px;}';
-  html+='table{width:100%;border-collapse:collapse;margin:4px 0;font-size:10px;}';
-  html+='th{background:#f0f0f0;color:#333;padding:4px 6px;text-align:left;border-bottom:2px solid #ccc;}';
-  html+='td{border-bottom:1px solid #eee;padding:4px 6px;}';
-  html+='.metric-val{font-weight:bold;font-family:monospace;color:#d35400;}';
   
-  html+='.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px;}';
-  html+='.box{background:#fdfdfd;border:1px solid #eee;border-radius:6px;padding:8px;}';
-  html+='.box-title{font-weight:bold;font-size:11px;margin-bottom:6px;color:#444;}';
-  
-  html+='.fin-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:4px;}';
-  html+='.fin-cell{background:#f5f5f5;padding:4px;border-radius:4px;text-align:center;}';
-  html+='.fin-lbl{font-size:8px;color:#666;text-transform:uppercase;}';
-  html+='.fin-val{font-family:monospace;font-size:11px;font-weight:bold;}';
-  html+='.val-g{color:#27ae60;}.val-r{color:#c0392b;}.val-o{color:#d35400;}';
-  
-  html+='.fate-box{text-align:center;background:#f9f9f9;border:1px solid #eee;border-radius:6px;padding:8px;}';
-  html+='.fate{font-size:14px;font-weight:bold;margin:2px 0;}';
-  html+='.fate.profit{color:#27ae60;}.fate.loss{color:#d35400;}.fate.bankrupt{color:#c0392b;}';
-  
-  html+='.advice-box{background:#eefdf3;border:1px solid #a3e4b7;border-radius:6px;padding:8px;margin:8px 0;}';
-  html+='.advice-box p{margin-bottom:3px;} .advice-box strong{color:#27ae60;}';
-  
-  html+='.explain{font-size:10px;line-height:1.4;margin-bottom:4px;}';
-  html+='.ce-head{font-weight:bold;color:#d35400;margin-top:6px;margin-bottom:2px;}';
-  html+='.ce-analogy{background:#f0f7ff;border:1px solid #cce0ff;padding:4px 6px;border-radius:4px;margin:3px 0;font-size:10px;}';
-  html+='.ce-analogy strong{color:#0055cc;}';
-  
-  html+='.footer{text-align:center;color:#aaa;font-size:8px;margin-top:10px;padding-top:6px;border-top:1px solid #eee;}';
-  html+='@media print{body{padding:10px 15px;} .box, .fate-box, .advice-box, .ce-analogy { break-inside: avoid; }}</style></head><body>';
+  // Create an explicit light-mode container for printing.
+  var html='<div id="print-report" style="background:#fff !important; color:#111 !important; font-family:Georgia,serif; padding:15px; max-width:100%; box-sizing:border-box;">';
+  html+='<style>@media print { @page { size: A4; margin: 12mm; } body { background: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; } #print-report { background: #fff !important; color: #111 !important; } * { text-shadow: none !important; box-shadow: none !important; } } #print-report h1{color:#d35400 !important;font-size:22px;text-align:center;margin:0 0 4px 0;} #print-report .date{text-align:center;color:#666 !important;font-size:11px;margin-bottom:12px;} #print-report h2{color:#d35400 !important;font-size:15px;margin:12px 0 6px;border-bottom:1px solid #eee;padding-bottom:2px;} #print-report .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;} #print-report table{width:100%;border-collapse:collapse;} #print-report th{background:#d35400 !important;color:#fff !important;padding:4px 6px;text-align:left;font-size:11px;} #print-report td{border:1px solid #ddd;padding:4px 6px;font-size:11px;} #print-report tr:nth-child(even){background:#fcfcfc !important;} #print-report .metric-val{font-weight:bold;font-family:monospace;font-size:12px;} #print-report .amp-box{text-align:center;padding:10px;background:#fff8f0 !important;border:2px solid #f0a050;border-radius:8px;} #print-report .amp-num{font-size:28px;font-weight:bold;color:#d35400 !important;font-family:monospace;margin:4px 0;} #print-report .explain{font-size:11.5px;line-height:1.45;margin:8px 0;} #print-report .ce-head{font-weight:bold;color:#d35400 !important;margin:8px 0 2px;} #print-report .ce-analogy{background:#f0f7ff !important;border:1px solid #cce0ff;padding:6px 8px;border-radius:6px;margin:4px 0;font-size:11px;} #print-report .footer{text-align:center;color:#777 !important;font-size:10px;margin-top:16px;padding-top:8px;border-top:1px solid #eee;} #print-report .fate{text-align:center;font-size:18px;font-weight:bold;margin:0 0 10px;} #print-report .profit{color:#27ae60 !important;} #print-report .loss{color:#d35400 !important;} #print-report .bankrupt{color:#c0392b !important;}</style>';
 
   // Header
-  html+='<h1>'+(isEN?'Bullwhip Effect Simulator — Learnings Report':'Kamçı Etkisi Simülatörü — Öğrenme Raporu')+'</h1>';
-  html+='<div class="subtitle">'+(isEN?'Report for: ':'Rapor: ')+name+'</div>';
-  html+='<div class="date">'+dateStr+'</div>';
+  html+='<h1>'+(isEN?'Bullwhip Effect Simulator — Learnings Report 🚀':'Kamçı Etkisi Simülatörü — Öğrenme Raporu 🚀')+'</h1>';
+  html+='<div class="date">📅 '+dateStr+'</div>';
+
+  // Fate
+  var fateClass=onPct>=92?'profit':onPct>=60?'loss':'bankrupt';
+  html+='<div class="fate '+fateClass+'">'+fateEmoji+' '+t(fateKey)+'</div>';
 
   html+='<div class="grid-2">';
   
-  // Game Results Box
-  html+='<div class="box"><div class="box-title">'+(isEN?'📊 Game Metrics':'📊 Oyun Metrikleri')+'</div>';
-  html+='<table><tr><th>'+(isEN?'Metric':'Metrik')+'</th><th>'+(isEN?'Value':'Değer')+'</th><th>'+(isEN?'Real-World':'Gerçek Dünya')+'</th></tr>';
-  html+='<tr><td>'+(isEN?'On-Road':'Yolda')+'</td><td class="metric-val">'+onPct.toFixed(1)+'%</td><td>'+(isEN?'Inventory in range':'Envanter dengede')+'</td></tr>';
-  html+='<tr><td>'+(isEN?'Violations':'İhlaller')+'</td><td class="metric-val">'+lastRun.vio+'</td><td>'+(isEN?'Stockouts / Overstock':'Stoksuz / Fazla stok')+'</td></tr>';
-  html+='<tr><td>'+(isEN?'Delay':'Gecikme')+'</td><td class="metric-val">'+lastRun.dly+'</td><td>'+delayReal+'</td></tr>';
+  // Game Results Table
+  html+='<div><h2>'+(isEN?'📊 Game Results':'📊 Oyun Sonuçları')+'</h2>';
+  html+='<table><tr><th>'+(isEN?'Metric':'Metrik')+'</th><th>'+(isEN?'Value':'Değer')+'</th><th>'+(isEN?'Meaning':'Anlamı')+'</th></tr>';
+  html+='<tr><td>'+(isEN?'On-Road':'Yolda')+'</td><td class="metric-val">'+onPct.toFixed(1)+'%</td><td>'+(isEN?'Inventory in acceptable range':'Envanterin kabul edilebilir aralıkta olduğu süre')+'</td></tr>';
+  html+='<tr><td>'+(isEN?'Violations':'İhlaller')+'</td><td class="metric-val">'+lastRun.vio+'</td><td>'+(isEN?'Stockouts or overstock instances':'Stoksuz kalma veya fazla stok sayısı')+'</td></tr>';
+  html+='<tr><td>'+(isEN?'Info Delay':'Bilgi Gecikmesi')+'</td><td class="metric-val">'+lastRun.dly+'</td><td>'+delayReal+'</td></tr>';
   html+='<tr><td>'+(isEN?'Volatility':'Oynaklık')+'</td><td class="metric-val">'+lastRun.spd+'</td><td>'+speedDesc+'</td></tr>';
-  html+='<tr><td>'+(isEN?'Horizon':'Ufuk')+'</td><td class="metric-val">'+lastRun.fog+'m</td><td>'+forecastWeeks+(isEN?' weeks':' hafta')+'</td></tr>';
+  html+='<tr><td>'+(isEN?'Horizon':'Ufuk')+'</td><td class="metric-val">'+lastRun.fog+'m</td><td>'+forecastWeeks+(isEN?' wks':' hft')+'</td></tr>';
   html+='</table></div>';
 
-  // Financial Outcome Box
-  html+='<div class="box"><div class="box-title">'+(isEN?'💵 Financial Outcome':'💵 Finansal Sonuç')+'</div>';
-  html+='<div class="fin-grid">';
-  html+='<div class="fin-cell"><div class="fin-lbl">'+t('finRevenue')+'</div><div class="fin-val val-g">'+curr+baseRevenue.toLocaleString()+'</div></div>';
-  html+='<div class="fin-cell"><div class="fin-lbl">'+t('finNetResult')+'</div><div class="fin-val '+(netProfit>=0?'val-g':'val-r')+'">'+curr+netProfit.toLocaleString()+'</div></div>';
-  html+='<div class="fin-cell"><div class="fin-lbl">'+t('finOverCost')+'</div><div class="fin-val val-r">-'+curr+overCost.toLocaleString()+'</div></div>';
-  html+='<div class="fin-cell"><div class="fin-lbl">'+t('finUnderCost')+'</div><div class="fin-val val-o">-'+curr+underCost.toLocaleString()+'</div></div>';
-  html+='</div>';
-  var finClass=onPct>=92?'profit':onPct>=60?'loss':'bankrupt';
-  html+='<div class="fate-box"><div class="box-title">'+(isEN?'Company Status':'Şirket Durumu')+'</div><div class="fate '+finClass+'">'+fateEmoji+' '+t(fateKey)+'</div></div>';
-  html+='</div>'; // end box
-  
-  html+='</div>'; // end grid-2
+  // Amplification
+  html+='<div><h2>'+(isEN?'📈 Amplification':'📈 Büyütme')+'</h2>';
+  html+='<div class="amp-box"><div>'+(isEN?'Bullwhip Ratio':'Kamçı Oranı')+'</div><div class="amp-num">'+ratio.toFixed(1)+'×</div><div style="font-size:10.5px;color:#555 !important;">'+(isEN?'Your response swings were <b>'+ratio.toFixed(1)+'×</b> wider than the demand signal':'Tepki salınımlarınız talep sinyalinden <b>'+ratio.toFixed(1)+'</b> kat daha genişti')+'</div></div>';
+  html+='</div></div>'; // End grid-2
 
-  // Advice
-  var advHtml='<div class="advice-box"><div class="box-title">'+t('advHead')+'</div>';
-  if(lastRun.dly>2) advHtml+='<p>'+t('advDelay')+'</p>';
-  if(lastRun.fog<70) advHtml+='<p>'+t('advHeadlight')+'</p>';
-  if(lastRun.spd>=5) advHtml+='<p>'+t('advSpeed')+'</p>';
-  advHtml+='<p>'+t('advGeneral')+'</p></div>';
-  html+=advHtml;
-
-  // Explanation
+  // What Happened And Why
   html+='<h2>'+(isEN?'🧠 What Happened — And Why':'🧠 Ne Oldu — Ve Neden')+'</h2>';
   html+='<div class="explain">'+explainText+'</div>';
 
-  // What is the Bullwhip Effect
+  // What Is the Bullwhip Effect
   html+='<h2>'+(isEN?'📚 What Is the Bullwhip Effect?':'📚 Kamçı Etkisi Nedir?')+'</h2>';
-  html+='<div class="explain">'+t('eP1')+' '+t('eP2')+'</div>';
+  html+='<div class="explain">'+t('eP1')+'</div>';
+  html+='<div class="explain">'+t('eP2')+'</div>';
 
-  // Footer
-  html+='<div class="footer">Prof. Dr. Erkut AKKARTAL | Yeditepe Üniversitesi | 2026</div>';
-  html+='<script>window.onload=function(){window.print();}<\/script>';
-  html+='</body></html>';
+  // Regular App Footer style incorporated at the bottom
+  html+='<div class="footer">';
+  html+='<span style="color:#d35400 !important;font-weight:bold;">Prof. Dr. Erkut AKKARTAL</span> | Yeditepe Üniversitesi | 2026';
+  html+='</div>';
+  html+='</div>'; // End print-report container
 
-  var win=window.open('','_blank');
-  if(win){
-    win.document.write(html);
-    win.document.close();
-  } else {
-    alert(isEN?'Please allow pop-ups for this site to export the report.':'Raporu dışa aktarmak için bu sitenin açılır pencerelerini etkinleştirin.');
+  // Cross-device reliable printing
+  // Hide all current body children
+  var originalChildren = [];
+  for (var i = 0; i < document.body.children.length; i++) {
+    var child = document.body.children[i];
+    if (child.tagName !== 'SCRIPT') {
+      originalChildren.push({ el: child, display: child.style.display });
+      child.style.display = 'none';
+    }
   }
+
+  // Create temporary container
+  var printWrapper = document.createElement('div');
+  printWrapper.id = 'print-wrapper';
+  printWrapper.innerHTML = html;
+  // Ensure the body forces a white background temporarily during print
+  var oldBodyBg = document.body.style.background;
+  document.body.style.background = '#ffffff';
+  document.body.appendChild(printWrapper);
+
+  // Print and restore
+  setTimeout(function() {
+    window.print();
+    
+    // Restore UI
+    document.body.removeChild(printWrapper);
+    document.body.style.background = oldBodyBg;
+    for (var i = 0; i < originalChildren.length; i++) {
+      originalChildren[i].el.style.display = originalChildren[i].display;
+    }
+  }, 150);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1983,6 +2038,11 @@ $id('btnTR').classList.toggle('active', lang==='tr');
 try{
   var savedTheme = localStorage.getItem('bw_theme');
   if(savedTheme === 'light') toggleTheme();
+}catch(e){}
+
+try{
+  var savedFS = localStorage.getItem('bw_fs');
+  if(savedFS === 'm' || savedFS === 'l') setFontSize(savedFS);
 }catch(e){}
 
 applyText();
