@@ -431,6 +431,7 @@ html.fs-l .cfg-range{width:100%!important;flex:1;}
         <span class="cv pu" id="dFog">70m</span>
       </div>
       <div class="cfg-extras">
+        <button class="btn btn-rs" id="btnGyro" style="padding:4px 8px; font-size:12px; display:none;">🧭 Gyro</button>
         <div class="snd-wrap">
           <input type="checkbox" class="snd-cb" id="sndCb" checked>
           <label for="sndCb" id="lSound">Sound</label>
@@ -638,7 +639,9 @@ var S={
     ttDelay:'Represents information lag. High delay means your steering input arrives late to the wheels, causing the Bullwhip Effect.',
     ttSpeed:'How fast the road scrolls. Represents the rate of customer demand or general market volatility.',
     ttDur:'Total time for one simulation run. Longer runs make it harder to maintain focus and control.',
-    ttHL:'How far ahead you can see before the fog. Represents your forecast horizon or supply chain visibility.'
+    ttHL:'How far ahead you can see before the fog. Represents your forecast horizon or supply chain visibility.',
+    btnGyro:'🧭 Gyro',
+    gyroErr:'Gyro permission denied or not supported on this device.'
   },
   tr:{
     hSub:'Kamçı Etkisini Yaşayın',
@@ -722,7 +725,9 @@ var S={
     ttDelay:'Bilgi gecikmesini temsil eder. Yüksek gecikme, direksiyon girişinizin tekerleklere geç ulaşmasına ve Kamçı Etkisine neden olur.',
     ttSpeed:'Yolun kayma hızı. Müşteri talebinin hızını veya genel piyasa dalgalanmasını temsil eder.',
     ttDur:'Bir simülasyon turunun toplam süresi. Uzun turlar odaklanmayı ve kontrolü zorlaştırır.',
-    ttHL:'Sisten önce ne kadar ileriyi görebildiğiniz. Tahmin ufkunuzu veya tedarik zinciri görünürlüğünü temsil eder.'
+    ttHL:'Sisten önce ne kadar ileriyi görebildiğiniz. Tahmin ufkunuzu veya tedarik zinciri görünürlüğünü temsil eder.',
+    btnGyro:'🧭 Jiroskop',
+    gyroErr:'Jiroskop izni reddedildi veya bu cihazda desteklenmiyor.'
   }
 };
 
@@ -742,6 +747,7 @@ canvas.width    = CW;
 
 var steerSlider = $id('steerSlider');
 var actTri      = $id('actTri');
+var btnGyro     = $id('btnGyro');
 var sDelay      = $id('sDelay');
 var sSpeed      = $id('sSpeed');
 var sDur        = $id('sDur');
@@ -758,6 +764,9 @@ var bR          = $id('bR');
 var fogOverlay  = $id('fogOverlay');
 var mo          = $id('mo');
 var wmo         = $id('wmo');
+
+// Gyro state
+var gyroActive = false;
 
 // ═══════════════════════════════════════════════════════════════
 // THEME
@@ -861,6 +870,7 @@ function applyText(){
   $id('lDlo').textContent   = t('lDlo');
   $id('lDhi').textContent   = t('lDhi');
   btnRs.textContent         = t('btnRs');
+  if(btnGyro) btnGyro.textContent = t('btnGyro');
   $id('mCh').textContent    = t('mCh');
   if(!G.running) sStat.textContent = t('stReady');
   $id('mTitle').textContent = t('mTitle');
@@ -1075,11 +1085,13 @@ function startGame(){
   if(typeof chartMo !== 'undefined') chartMo.classList.remove('vis');
   wmo.classList.remove('vis');
   G.delay=parseInt(sDelay.value); G.baseSpeed=parseInt(sSpeed.value); G.gameDur=parseInt(sDur.value);
-  G.running=true; G.paused=false; G.gameTime=0; G.carX=0; G.scrollY=0; G.sliderPos=0;
+  G.running=true; G.paused=false; G.gameTime=0; G.carX=0; G.scrollY=0;
+  if(!gyroActive) G.sliderPos=0;
   G.smoothedInput=0; G.inputSteer=0; G.viscousSteer=0; G.steerVelocity=0; G.actualSteer=0;
   G.steerQueue=[]; G.sliderActive=false; G.totalFrames=0; G.onFrames=0; G.violations=0;
   G.wasOff=false; G.isOff=false; G.carOff=false; G.pathTrace=[]; G.skidMarks=[]; G.lastTS=0;
-  steerSlider.value=0; sStat.textContent=t('stDriving');
+  if(!gyroActive) steerSlider.value=0;
+  sStat.textContent=t('stDriving');
   sDelay.disabled=true; sSpeed.disabled=true; sDur.disabled=true; sFog.disabled=true;
   for(var i=0;i<G.delay;i++) G.steerQueue.push(0);
   genRoad(); audio.startEngine(); audio.updateEngine(G.baseSpeed); requestAnimationFrame(loop);
@@ -1092,10 +1104,12 @@ function resetGame(){
   G.actualSteer=0; G.steerQueue=[]; G.totalFrames=0; G.onFrames=0; G.violations=0;
   G.wasOff=false; G.isOff=false; G.carOff=false; G.pathTrace=[]; G.skidMarks=[];
   sDelay.disabled=false; sSpeed.disabled=false; sDur.disabled=false; sFog.disabled=false;
+  if(!gyroActive) G.sliderPos=0;
   sStat.textContent=t('stReady'); sTime.textContent='0.0s';
   sRoad.textContent='100%'; sRoad.className='stat-v good';
   sViol.textContent='0'; pFill.style.width='0%';
-  steerSlider.value=0; actTri.style.left='50%';
+  if(!gyroActive) steerSlider.value=0;
+  if(!gyroActive) actTri.style.left='50%';
   drawStatic();
 }
 
@@ -1158,8 +1172,8 @@ function loop(ts){
   if(keys['ArrowRight']||keys['d']||keys['D']) G.sliderPos=Math.min(100,G.sliderPos+1);
 
   var rawInput;
-  if(G.sliderActive){ rawInput=(parseInt(steerSlider.value)/100)*SP; G.sliderPos=parseInt(steerSlider.value); G.smoothedInput=rawInput; }
-  else { var st=(G.sliderPos/100)*SP; G.smoothedInput+=(st-G.smoothedInput)*0.20; rawInput=G.smoothedInput; steerSlider.value=G.sliderPos; }
+  if(G.sliderActive && !gyroActive){ rawInput=(parseInt(steerSlider.value)/100)*SP; G.sliderPos=parseInt(steerSlider.value); G.smoothedInput=rawInput; }
+  else { var st=(G.sliderPos/100)*SP; G.smoothedInput+=(st-G.smoothedInput)*0.20; rawInput=G.smoothedInput; steerSlider.value=Math.round(G.sliderPos); }
   G.inputSteer=rawInput;
 
   // ═══════════════════════════════════════════════════════════════
@@ -1829,11 +1843,57 @@ function addStepBtn(btn,dir){
 }
 addStepBtn(bL,-1); addStepBtn(bR,1);
 
-steerSlider.addEventListener('mousedown', function(){ G.sliderActive=true; audio.init(); });
-steerSlider.addEventListener('touchstart', function(){ G.sliderActive=true; audio.init(); },{passive:true});
-document.addEventListener('mouseup',     function(){ G.sliderActive=false; });
-document.addEventListener('touchend',    function(){ G.sliderActive=false; });
-document.addEventListener('touchcancel', function(){ G.sliderActive=false; });
+steerSlider.addEventListener('mousedown', function(){ if(!gyroActive) G.sliderActive=true; audio.init(); });
+steerSlider.addEventListener('touchstart', function(){ if(!gyroActive) G.sliderActive=true; audio.init(); },{passive:true});
+document.addEventListener('mouseup',     function(){ if(!gyroActive) G.sliderActive=false; });
+document.addEventListener('touchend',    function(){ if(!gyroActive) G.sliderActive=false; });
+document.addEventListener('touchcancel', function(){ if(!gyroActive) G.sliderActive=false; });
+
+// Gyro Logic
+if (window.DeviceOrientationEvent) {
+  btnGyro.style.display = 'inline-block';
+}
+
+btnGyro.addEventListener('click', function() {
+  if (gyroActive) {
+    gyroActive = false;
+    btnGyro.style.background = '';
+    btnGyro.style.color = '';
+    btnGyro.style.borderColor = '';
+    G.sliderPos = 0;
+    steerSlider.value = 0;
+    return;
+  }
+
+  if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+    DeviceOrientationEvent.requestPermission()
+      .then(function(permissionState) {
+        if (permissionState === 'granted') {
+          enableGyro();
+        } else {
+          alert(t('gyroErr'));
+        }
+      })
+      .catch(function(console) { alert(t('gyroErr')); });
+  } else {
+    enableGyro();
+  }
+});
+
+function enableGyro() {
+  gyroActive = true;
+  btnGyro.style.background = 'rgba(34,197,94,.15)';
+  btnGyro.style.color = '#22c55e';
+  btnGyro.style.borderColor = '#22c55e';
+}
+
+window.addEventListener('deviceorientation', function(e) {
+  if (!gyroActive || !e.gamma) return;
+  // gamma is roughly -90 to 90. Let's map -45 to +45 to -100 to 100
+  var tilt = e.gamma; // left to right
+  var val = (tilt / 40) * 100;
+  G.sliderPos = Math.max(-100, Math.min(100, val));
+});
 
 sDelay.addEventListener('input', function(){ $id('dDelay').textContent=sDelay.value; });
 sSpeed.addEventListener('input', function(){ $id('dSpeed').textContent=sSpeed.value; });
