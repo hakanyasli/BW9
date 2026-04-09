@@ -1906,64 +1906,110 @@ function exportLearnings(){
 
   // Real-world param translations
   var delayDays=lastRun.dly;
-  var delayReal=delayDays===0?(lang==='tr'?'Gerçek zamanlı':'Real-time'):
+  var delayReal=delayDays===0?(lang==='tr'?'0':'0'):
     (delayDays<=7?(delayDays+(lang==='tr'?' gün':' days')):(Math.round(delayDays/7)+(lang==='tr'?' hafta':' weeks')));
   var forecastWeeks=Math.round(lastRun.fog/10);
   var speedDesc=lastRun.spd<=2?(lang==='tr'?'Sabit':'Stable'):lastRun.spd<=4?(lang==='tr'?'Normal':'Normal'):lastRun.spd<=6?(lang==='tr'?'Dalgalı':'Volatile'):(lang==='tr'?'Aşırı':'Extreme');
 
   var explainText=lastRun.dly<=1?t('chartExplain0'):lastRun.dly<=5?t('chartExplainLow'):t('chartExplainHigh');
+  // Strip out analogy div wrappers from translations since we re-wrap them via regex or class selection later
+  var explanationHtml = explainText.replace(/class="ce-analogy"/g, 'class="ce-analogy custom-analogy"');
 
   var today=new Date();
   var dateStr=today.toLocaleDateString(lang==='tr'?'tr-TR':'en-US',{year:'numeric',month:'long',day:'numeric'});
 
   var isEN=lang==='en';
+  var curr=lang==='tr'?'₺':'$';
+
+  // Calculate Financials (same logic as showChart)
+  var raw=G.pathTrace;
+  var step=Math.max(1,Math.floor(raw.length/800));
+  var N_pts=0, overFrames=0, underFrames=0;
+  for(var i=0;i<raw.length;i+=step){
+    var pt=raw[i];
+    var seg=(pt.worldSeg>=0 && pt.worldSeg<G.road.length)?G.road[pt.worldSeg]:null;
+    N_pts++;
+    if(pt.isOff && seg){
+      if(pt.x > seg.ox) overFrames++;
+      else underFrames++;
+    }
+  }
+  var baseRevenue=1000000;
+  var overPct=overFrames/Math.max(1,N_pts);
+  var underPct=underFrames/Math.max(1,N_pts);
+  var overCost=Math.round(overPct*baseRevenue*0.6);
+  var underCost=Math.round(underPct*baseRevenue*1.2);
+  var netProfit=baseRevenue-overCost-underCost;
+
+  // Format currency
+  function fmtMny(v) { return curr+v.toLocaleString(); }
+  var profitColor = netProfit>=0?'#22c55e':'#ef4444';
+
+  var fateColor = onPct>=92?'#22c55e':onPct>=60?'#d35400':'#c0392b';
+
+  var adviceHtml = '';
+  if(G.delay>2) adviceHtml+='<div style="margin-bottom:2px">'+t('advDelay')+'</div>';
+  if(parseInt(sFog.value)<70) adviceHtml+='<div style="margin-bottom:2px">'+t('advHeadlight')+'</div>';
+  if(G.baseSpeed>=5) adviceHtml+='<div style="margin-bottom:2px">'+t('advSpeed')+'</div>';
+  adviceHtml+='<div style="margin-top:2px">'+t('advGeneral')+'</div>';
   
-  // Create an explicit light-mode container for printing.
-  var html='<div id="print-report" style="background:#fff !important; color:#111 !important; font-family:Georgia,serif; padding:15px; max-width:100%; box-sizing:border-box;">';
-  html+='<style>@media print { @page { size: A4; margin: 12mm; } body { background: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; } #print-report { background: #fff !important; color: #111 !important; } * { text-shadow: none !important; box-shadow: none !important; } } #print-report h1{color:#d35400 !important;font-size:22px;text-align:center;margin:0 0 4px 0;} #print-report .date{text-align:center;color:#666 !important;font-size:11px;margin-bottom:12px;} #print-report h2{color:#d35400 !important;font-size:15px;margin:12px 0 6px;border-bottom:1px solid #eee;padding-bottom:2px;} #print-report .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;} #print-report table{width:100%;border-collapse:collapse;} #print-report th{background:#d35400 !important;color:#fff !important;padding:4px 6px;text-align:left;font-size:11px;} #print-report td{border:1px solid #ddd;padding:4px 6px;font-size:11px;} #print-report tr:nth-child(even){background:#fcfcfc !important;} #print-report .metric-val{font-weight:bold;font-family:monospace;font-size:12px;} #print-report .amp-box{text-align:center;padding:10px;background:#fff8f0 !important;border:2px solid #f0a050;border-radius:8px;} #print-report .amp-num{font-size:28px;font-weight:bold;color:#d35400 !important;font-family:monospace;margin:4px 0;} #print-report .explain{font-size:11.5px;line-height:1.45;margin:8px 0;} #print-report .ce-head{font-weight:bold;color:#d35400 !important;margin:8px 0 2px;} #print-report .ce-analogy{background:#f0f7ff !important;border:1px solid #cce0ff;padding:6px 8px;border-radius:6px;margin:4px 0;font-size:11px;} #print-report .footer{text-align:center;color:#777 !important;font-size:10px;margin-top:16px;padding-top:8px;border-top:1px solid #eee;} #print-report .fate{text-align:center;font-size:18px;font-weight:bold;margin:0 0 10px;} #print-report .profit{color:#27ae60 !important;} #print-report .loss{color:#d35400 !important;} #print-report .bankrupt{color:#c0392b !important;}</style>';
+  // Create an explicit light-mode container for printing. Max compact fit.
+  var html='<div id="print-report" style="background:#fff !important; color:#333 !important; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Helvetica, Arial, sans-serif !important; padding:10px 15px; max-width:100%; box-sizing:border-box; line-height:1.35;">';
+  html+='<style>@media print { @page { size: A4; margin: 10mm; } body { background: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; } #print-report { background: #fff !important; color: #222 !important; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Helvetica, Arial, sans-serif !important; padding:0!important; } * { text-shadow: none !important; box-shadow: none !important; } } #print-report h1{color:#d35400 !important;font-size:22px;text-align:center;margin:0 0 2px 0; font-weight:800;} #print-report .subtitle{text-align:center;color:#555 !important;font-size:13px;margin-bottom:0px;} #print-report .date{text-align:center;color:#888 !important;font-size:11px;margin-bottom:12px;} #print-report .top-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px;} #print-report .card{border:1px solid #e5e7eb;border-radius:6px;padding:8px 10px;background:#fcfcfc !important;} #print-report .card h3{font-size:13px;margin:0 0 6px 0;color:#111 !important;display:flex;align-items:center;gap:6px;} #print-report table{width:100%;border-collapse:collapse;font-size:11px;} #print-report th{padding:3px 4px;text-align:left;color:#333 !important;border-bottom:2px solid #eee;font-weight:600;background:rgba(0,0,0,0.02) !important;} #print-report td{padding:3px 4px;border-bottom:1px solid #eee;color:#333 !important;} #print-report .td-val{font-family:monospace;font-weight:bold;color:#d35400 !important;font-size:12px;} #print-report .fin-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;text-align:center;} #print-report .fin-box{background:#f3f4f6 !important;padding:4px;border-radius:4px;} #print-report .fin-lbl{font-size:9px;text-transform:uppercase;color:#666 !important;margin-bottom:1px;letter-spacing:0.5px;} #print-report .fin-val{font-family:monospace;font-size:12px;font-weight:bold;} #print-report .status-box{margin-top:6px;text-align:center;padding:6px;border:1px solid #eee;border-radius:4px;background:#fff !important;display:flex;align-items:center;justify-content:center;gap:6px;} #print-report .status-lbl{font-size:11px;font-weight:600;color:#333 !important;} #print-report .status-fate{font-size:16px;font-weight:bold;} #print-report .adv-card{background:#ecfdf5 !important;border:1px solid #a7f3d0;border-radius:6px;padding:8px 12px;margin-bottom:10px;font-size:11.5px;color:#065f46 !important;} #print-report .adv-card strong{color:#047857 !important;} #print-report h2{color:#d35400 !important;font-size:14px;margin:10px 0 4px;border-bottom:1px solid #eee;padding-bottom:2px;display:flex;align-items:center;gap:6px;} #print-report .explain-txt{font-size:11px;color:#333 !important;margin-bottom:6px;} #print-report .explain-txt .ce-head{font-weight:bold;color:#d35400 !important;margin-top:6px;margin-bottom:2px;font-size:12px;} #print-report .custom-analogy{background:#f0f9ff !important;border:1px solid #bae6fd;padding:6px 8px;border-radius:6px;margin:4px 0;font-size:10.5px;color:#0369a1 !important;} #print-report .custom-analogy strong{color:#0284c7 !important;} #print-report .footer{text-align:center;font-size:10px;color:#666 !important;margin-top:12px;border-top:1px solid #eee;padding-top:6px;}</style>';
 
   // Header
-  html+='<h1>'+(isEN?'Bullwhip Effect Simulator — Learnings Report 🚀':'Kamçı Etkisi Simülatörü — Öğrenme Raporu 🚀')+'</h1>';
-  html+='<div class="date">📅 '+dateStr+'</div>';
+  html+='<h1>'+(isEN?'Bullwhip Effect Simulator — Learnings Report':'Kamçı Etkisi Simülatörü — Öğrenme Raporu')+'</h1>';
+  html+='<div class="subtitle">'+(isEN?'Report for: ':'Rapor: ')+(lang==='tr'?'Öğrenci':'Student')+'</div>';
+  html+='<div class="date">'+dateStr+'</div>';
 
-  // Fate
-  var fateClass=onPct>=92?'profit':onPct>=60?'loss':'bankrupt';
-  html+='<div class="fate '+fateClass+'">'+fateEmoji+' '+t(fateKey)+'</div>';
-
-  html+='<div class="grid-2">';
+  // Top Grid
+  html+='<div class="top-grid">';
   
-  // Game Results Table
-  html+='<div><h2>'+(isEN?'📊 Game Results':'📊 Oyun Sonuçları')+'</h2>';
-  html+='<table><tr><th>'+(isEN?'Metric':'Metrik')+'</th><th>'+(isEN?'Value':'Değer')+'</th><th>'+(isEN?'Meaning':'Anlamı')+'</th></tr>';
-  html+='<tr><td>'+(isEN?'On-Road':'Yolda')+'</td><td class="metric-val">'+onPct.toFixed(1)+'%</td><td>'+(isEN?'Inventory in acceptable range':'Envanterin kabul edilebilir aralıkta olduğu süre')+'</td></tr>';
-  html+='<tr><td>'+(isEN?'Violations':'İhlaller')+'</td><td class="metric-val">'+lastRun.vio+'</td><td>'+(isEN?'Stockouts or overstock instances':'Stoksuz kalma veya fazla stok sayısı')+'</td></tr>';
-  html+='<tr><td>'+(isEN?'Info Delay':'Bilgi Gecikmesi')+'</td><td class="metric-val">'+lastRun.dly+'</td><td>'+delayReal+'</td></tr>';
-  html+='<tr><td>'+(isEN?'Volatility':'Oynaklık')+'</td><td class="metric-val">'+lastRun.spd+'</td><td>'+speedDesc+'</td></tr>';
-  html+='<tr><td>'+(isEN?'Horizon':'Ufuk')+'</td><td class="metric-val">'+lastRun.fog+'m</td><td>'+forecastWeeks+(isEN?' wks':' hft')+'</td></tr>';
+  // Left Card: Game Metrics
+  html+='<div class="card">';
+  html+='<h3>📊 '+(isEN?'Game Metrics':'Oyun Metrikleri')+'</h3>';
+  html+='<table><tr><th>'+(isEN?'Metric':'Metrik')+'</th><th>'+(isEN?'Value':'Değer')+'</th><th>'+(isEN?'Real-World':'Gerçek Dünya')+'</th></tr>';
+  html+='<tr><td>'+(isEN?'On-Road':'Yolda')+'</td><td class="td-val">'+onPct.toFixed(1)+'%</td><td>'+(isEN?'Inventory in range':'Envanterin kabul edilebilir aralığı')+'</td></tr>';
+  html+='<tr><td>'+(isEN?'Violations':'İhlaller')+'</td><td class="td-val">'+lastRun.vio+'</td><td>'+(isEN?'Stockouts / Overstock':'Stoksuz / Fazla stok')+'</td></tr>';
+  html+='<tr><td>'+(isEN?'Delay':'Gecikme')+'</td><td class="td-val">'+lastRun.dly+'</td><td>'+delayReal+'</td></tr>';
+  html+='<tr><td>'+(isEN?'Volatility':'Oynaklık')+'</td><td class="td-val">'+lastRun.spd+'</td><td>'+speedDesc+'</td></tr>';
+  html+='<tr><td>'+(isEN?'Horizon':'Ufuk')+'</td><td class="td-val">'+lastRun.fog+'m</td><td>'+forecastWeeks+(isEN?' weeks':' hafta')+'</td></tr>';
   html+='</table></div>';
 
-  // Amplification
-  html+='<div><h2>'+(isEN?'📈 Amplification':'📈 Büyütme')+'</h2>';
-  html+='<div class="amp-box"><div>'+(isEN?'Bullwhip Ratio':'Kamçı Oranı')+'</div><div class="amp-num">'+ratio.toFixed(1)+'×</div><div style="font-size:10.5px;color:#555 !important;">'+(isEN?'Your response swings were <b>'+ratio.toFixed(1)+'×</b> wider than the demand signal':'Tepki salınımlarınız talep sinyalinden <b>'+ratio.toFixed(1)+'</b> kat daha genişti')+'</div></div>';
-  html+='</div></div>'; // End grid-2
+  // Right Card: Financial Outcome
+  html+='<div class="card" style="display:flex;flex-direction:column;justify-content:space-between;">';
+  html+='<h3>💵 '+(isEN?'Financial Outcome':'Finansal Sonuç')+'</h3>';
+  html+='<div class="fin-grid">';
+  html+='<div class="fin-box"><div class="fin-lbl">'+(isEN?'Revenue':'Gelir')+'</div><div class="fin-val" style="color:#22c55e !important;">'+fmtMny(baseRevenue)+'</div></div>';
+  html+='<div class="fin-box"><div class="fin-lbl">'+(isEN?'Net Result':'Net Sonuç')+'</div><div class="fin-val" style="color:'+profitColor+' !important;">'+fmtMny(netProfit)+'</div></div>';
+  html+='<div class="fin-box"><div class="fin-lbl">'+(isEN?'Overstock Cost':'Fazla Stok Mlyt')+'</div><div class="fin-val" style="color:#c0392b !important;">-'+fmtMny(overCost)+'</div></div>';
+  html+='<div class="fin-box"><div class="fin-lbl">'+(isEN?'Stockout Cost':'Stok Dışı Mlyt')+'</div><div class="fin-val" style="color:#d35400 !important;">-'+fmtMny(underCost)+'</div></div>';
+  html+='</div>'; // End fin-grid
+  html+='<div class="status-box"><div class="status-lbl">'+(isEN?'Company Status':'Şirket Durumu')+'</div><div class="status-fate" style="color:'+fateColor+' !important;">'+fateEmoji+' '+t(fateKey)+'</div></div>';
+  html+='</div></div>'; // End Right Card & Top Grid
+
+  // Advice Card (Green Box)
+  html+='<div class="adv-card">';
+  html+='<strong style="display:block;margin-bottom:4px;font-size:12px;">'+(isEN?'Recommendations for Your Next Run':'Bir Sonraki Turunuz İçin Öneriler')+'</strong>';
+  html+=adviceHtml;
+  html+='</div>';
 
   // What Happened And Why
-  html+='<h2>'+(isEN?'🧠 What Happened — And Why':'🧠 Ne Oldu — Ve Neden')+'</h2>';
-  html+='<div class="explain">'+explainText+'</div>';
+  html+='<h2>🧠 '+(isEN?'What Happened — And Why':'Ne Oldu — Ve Neden')+'</h2>';
+  html+='<div class="explain-txt">'+explanationHtml+'</div>';
 
   // What Is the Bullwhip Effect
-  html+='<h2>'+(isEN?'📚 What Is the Bullwhip Effect?':'📚 Kamçı Etkisi Nedir?')+'</h2>';
-  html+='<div class="explain">'+t('eP1')+'</div>';
-  html+='<div class="explain">'+t('eP2')+'</div>';
+  html+='<h2>📚 '+(isEN?'What Is the Bullwhip Effect?':'Kamçı Etkisi Nedir?')+'</h2>';
+  html+='<div class="explain-txt">'+t('eP1')+'</div>';
+  html+='<div class="explain-txt">'+t('eP2')+'</div>';
 
   // Regular App Footer style incorporated at the bottom
   html+='<div class="footer">';
-  html+='<span style="color:#d35400 !important;font-weight:bold;">Prof. Dr. Erkut AKKARTAL</span> | Yeditepe Üniversitesi | 2026';
+  html+='<strong style="color:#d35400 !important;">Prof. Dr. Erkut AKKARTAL</strong> | Yeditepe Üniversitesi | 2026';
   html+='</div>';
   html+='</div>'; // End print-report container
 
   // Cross-device reliable printing
-  // Hide all current body children
   var originalChildren = [];
   for (var i = 0; i < document.body.children.length; i++) {
     var child = document.body.children[i];
@@ -1973,26 +2019,39 @@ function exportLearnings(){
     }
   }
 
-  // Create temporary container
   var printWrapper = document.createElement('div');
   printWrapper.id = 'print-wrapper';
   printWrapper.innerHTML = html;
-  // Ensure the body forces a white background temporarily during print
+  
   var oldBodyBg = document.body.style.background;
   document.body.style.background = '#ffffff';
   document.body.appendChild(printWrapper);
 
-  // Print and restore
-  setTimeout(function() {
-    window.print();
-    
-    // Restore UI
-    document.body.removeChild(printWrapper);
+  // Function to cleanup and restore UI after print finishes or fails
+  var isCleanedUp = false;
+  function cleanupPrint() {
+    if(isCleanedUp) return;
+    isCleanedUp = true;
+    if(printWrapper.parentNode) {
+      document.body.removeChild(printWrapper);
+    }
     document.body.style.background = oldBodyBg;
     for (var i = 0; i < originalChildren.length; i++) {
       originalChildren[i].el.style.display = originalChildren[i].display;
     }
-  }, 150);
+    window.removeEventListener('afterprint', cleanupPrint);
+  }
+
+  // Listen for native print completion/cancellation
+  window.addEventListener('afterprint', cleanupPrint);
+
+  // Call print *synchronously* to bypass iOS popup blockers
+  window.print();
+  
+  // In some older or specific browsers where afterprint fails, 
+  // we add a generous fallback timeout just in case. But because print blocks the thread, 
+  // this typically executes ONLY after the print dialog is closed.
+  setTimeout(cleanupPrint, 1000);
 }
 
 // ═══════════════════════════════════════════════════════════════
