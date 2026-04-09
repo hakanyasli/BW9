@@ -75,8 +75,16 @@ body:not(.dark) .fog-overlay{background:linear-gradient(to bottom,#1a2a1a 0%,#1a
 .steer-btn.act{background:rgba(59,130,246,.25);border-color:#3b82f6;color:#3b82f6;}
 .steer-range{-webkit-appearance:none;appearance:none;width:100%;height:26px;border-radius:4px;background:#222;border:2px solid #555;outline:none;cursor:pointer;box-shadow:inset 1px 1px 0 #111,inset -1px -1px 0 #666,2px 2px 0 #000;display:block;}
 .steer-range::-webkit-slider-runnable-track{height:26px;border-radius:3px;background:linear-gradient(to bottom,#2a2a34,#1a1a24,#2a2a34);}
-.steer-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:32px;height:30px;border-radius:4px;background:linear-gradient(to bottom,#eee,#bbb,#999);border:2px solid #777;box-shadow:inset 1px 1px 0 #fff,inset -1px -1px 0 #666,1px 1px 3px rgba(0,0,0,.5);cursor:grab;margin-top:-2px;}
-.steer-range::-moz-range-thumb{width:30px;height:28px;border-radius:4px;background:linear-gradient(to bottom,#eee,#bbb,#999);border:2px solid #777;cursor:grab;}
+.steer-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:32px;height:30px;border-radius:4px;background:linear-gradient(to bottom,#eee,#bbb,#999);border:2px solid #777;box-shadow:inset 1px 1px 0 #fff,inset -1px -1px 0 #666,1px 1px 3px rgba(0,0,0,.5);cursor:grab;margin-top:-2px;transition:border-radius 0.3s, width 0.3s, height 0.3s;}
+.steer-range::-moz-range-thumb{width:30px;height:28px;border-radius:4px;background:linear-gradient(to bottom,#eee,#bbb,#999);border:2px solid #777;cursor:grab;transition:border-radius 0.3s, width 0.3s, height 0.3s;}
+
+/* Gyro Mode slider thumb (ball) */
+.gyro-mode .steer-range::-webkit-slider-thumb{border-radius:50%;width:30px;height:30px;background:radial-gradient(circle at 30% 30%,#fff,#bbb,#666);box-shadow:0 4px 6px rgba(0,0,0,0.6), inset -2px -2px 6px rgba(0,0,0,0.4);border:1px solid #555;cursor:default;}
+.gyro-mode .steer-range::-moz-range-thumb{border-radius:50%;width:30px;height:30px;background:radial-gradient(circle at 30% 30%,#fff,#bbb,#666);box-shadow:0 4px 6px rgba(0,0,0,0.6), inset -2px -2px 6px rgba(0,0,0,0.4);border:1px solid #555;cursor:default;}
+/* Disable manual pointer events on slider in gyro mode */
+.gyro-mode .steer-range{pointer-events:none;}
+/* Hide L/R buttons in gyro mode */
+.gyro-mode .steer-btn{display:none;}
 
 /* Config sliders — responsive grid: 4-col wide, 2x2 medium, 1-col narrow. NEVER 3+1. */
 .cfg-row{display:grid;grid-template-columns:repeat(4,auto);gap:8px 14px;justify-content:center;align-items:start;margin-top:2px;}
@@ -151,8 +159,13 @@ body:not(.dark) .fog-overlay{background:linear-gradient(to bottom,#1a2a1a 0%,#1a
 .wsn{width:24px;height:24px;border-radius:50%;background:rgba(249,115,22,.18);color:#f97316;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
 .wst{font-size:14px;color:var(--text2);line-height:1.55;}
 .wst strong{color:var(--text);}
-.wctrl{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px;}
+.wctrl{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
 .wci{background:var(--bg3);border-radius:8px;padding:9px 11px;border:1px solid var(--border);}
+
+/* Control Selector in Welcome */
+.wmode{display:flex;gap:8px;margin-bottom:18px;background:var(--bg3);padding:6px;border-radius:12px;border:1px solid var(--border);}
+.wmode-btn{flex:1;padding:10px 4px;background:transparent;border:2px solid transparent;border-radius:8px;color:var(--text2);font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;}
+.wmode-btn.act{background:var(--bg2);border-color:#f97316;color:#f97316;box-shadow:0 2px 8px rgba(0,0,0,0.1);}
 .wcl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;}
 .wcv{font-size:12px;color:var(--text2);line-height:1.4;}
 .wdismiss{width:100%;padding:13px;background:#f97316;color:#fff;border:none;border-radius:10px;font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:background .2s;}
@@ -323,7 +336,7 @@ html.fs-l .cfg-range{width:100%!important;flex:1;}
   </div>
 </div>
     <h2 id="wTitle">Steering Delay Simulator</h2>
-    <div class="wver" id="wVer">v0.8 — Bullwhip Effect Demo</div>
+    <div class="wver" id="wVer">v0.9 — Bullwhip Effect Demo</div>
     <div style="text-align:center;margin-bottom:12px">
       <div class="dev-badge"><span id="devIcon">📱</span><span id="devTxt">Detecting…</span></div>
     </div>
@@ -339,6 +352,10 @@ html.fs-l .cfg-range{width:100%!important;flex:1;}
       <div class="wci"><div class="wcl" id="wcL2"></div><div class="wcv" id="wcV2"></div></div>
       <div class="wci"><div class="wcl" id="wcL3"></div><div class="wcv" id="wcV3"></div></div>
       <div class="wci"><div class="wcl" id="wcL4"></div><div class="wcv" id="wcV4"></div></div>
+    </div>
+    <div class="wmode">
+      <button class="wmode-btn act" id="wModeMan">👆 Manual</button>
+      <button class="wmode-btn" id="wModeGyro">📱 Gyro</button>
     </div>
     <button class="wdismiss" id="wDismiss">Let's Drive ▶</button>
     <div style="text-align:center;padding-top:14px;margin-top:14px;border-top:1px solid var(--border);font-size:11px;color:var(--text3);letter-spacing:.4px;">
@@ -361,7 +378,7 @@ html.fs-l .cfg-range{width:100%!important;flex:1;}
       </div>
     </div>
     <div class="hcenter">
-      <h1>Bullwhip Effect Simulator <span class="ver">v0.8.5</span></h1>
+      <h1>Bullwhip Effect Simulator <span class="ver">v0.9</span></h1>
       <div class="sub" id="hSub">Experience the Bullwhip Effect</div>
     </div>
     <div class="hright">
@@ -431,7 +448,6 @@ html.fs-l .cfg-range{width:100%!important;flex:1;}
         <span class="cv pu" id="dFog">70m</span>
       </div>
       <div class="cfg-extras">
-        <button class="btn btn-rs" id="btnGyro" style="padding:4px 8px; font-size:12px; display:none;">🧭 Gyro</button>
         <div class="snd-wrap">
           <input type="checkbox" class="snd-cb" id="sndCb" checked>
           <label for="sndCb" id="lSound">Sound</label>
@@ -619,7 +635,7 @@ var S={
     advSpeed:'<strong>When markets are volatile:</strong> shorter, more frequent ordering cycles outperform large batch orders. Agility beats efficiency in turbulent demand.',
     advGeneral:'<strong>The core lesson:</strong> The Bullwhip Effect is not caused by demand variability — it is caused by <em>delayed visibility</em> of that variability. Eliminate the lag, eliminate the whip.',
     tapResume:'Tap anywhere to resume',
-    wTitle:'Steering Delay Simulator',wVer:'v0.8.5 — Bullwhip Effect Demo',
+    wTitle:'Steering Delay Simulator',wVer:'v0.9 — Bullwhip Effect Demo',
     wDevM:'Mobile — use slider or ◀ ▶ buttons',
     wDevD:'Desktop — slider, buttons, or ← → / A D keys',
     wHint:'Tap <strong>?</strong> anytime to reopen this guide.',
@@ -640,7 +656,8 @@ var S={
     ttSpeed:'How fast the road scrolls. Represents the rate of customer demand or general market volatility.',
     ttDur:'Total time for one simulation run. Longer runs make it harder to maintain focus and control.',
     ttHL:'How far ahead you can see before the fog. Represents your forecast horizon or supply chain visibility.',
-    btnGyro:'🧭 Gyro',
+    wModeMan:'👆 Manual',
+    wModeGyro:'📱 Gyro',
     gyroErr:'Gyro permission denied or not supported on this device.'
   },
   tr:{
@@ -706,7 +723,7 @@ var S={
     advSpeed:'<strong>Piyasalar dalgalı olduğunda:</strong> daha kısa ve sık sipariş döngüleri büyük toplu siparişlerden daha iyi performans gösterir. Çalkantılı talepte çeviklik verimliliği yener.',
     advGeneral:'<strong>Temel ders:</strong> Kamçı Etkisi talep değişkenliğinden kaynaklanmaz — değişkenliğin <em>gecikmeli görünürlüğünden</em> kaynaklanır. Gecikmeyi ortadan kaldırın, kamçıyı ortadan kaldırın.',
     tapResume:'Devam etmek için dokunun',
-    wTitle:'Direksiyon Gecikmesi Simülatörü',wVer:'v0.8.5 — Kamçı Etkisi Demosu',
+    wTitle:'Direksiyon Gecikmesi Simülatörü',wVer:'v0.9 — Kamçı Etkisi Demosu',
     wDevM:'Mobil — kaydırıcı veya ◀ ▶ düğmelerini kullanın',
     wDevD:'Masaüstü — kaydırıcı, düğme veya ← → / A D tuşları',
     wHint:'<strong>?</strong> düğmesine (sağ üst) basarak bu kılavuzu açabilirsiniz.',
@@ -726,7 +743,8 @@ var S={
     ttSpeed:'Yolun kayma hızı. Müşteri talebinin hızını veya genel piyasa dalgalanmasını temsil eder.',
     ttDur:'Bir simülasyon turunun toplam süresi. Uzun turlar odaklanmayı ve kontrolü zorlaştırır.',
     ttHL:'Sisten önce ne kadar ileriyi görebildiğiniz. Tahmin ufkunuzu veya tedarik zinciri görünürlüğünü temsil eder.',
-    btnGyro:'🧭 Jiroskop',
+    wModeMan:'👆 Manuel',
+    wModeGyro:'📱 Jiroskop',
     gyroErr:'Jiroskop izni reddedildi veya bu cihazda desteklenmiyor.'
   }
 };
@@ -747,7 +765,6 @@ canvas.width    = CW;
 
 var steerSlider = $id('steerSlider');
 var actTri      = $id('actTri');
-var btnGyro     = $id('btnGyro');
 var sDelay      = $id('sDelay');
 var sSpeed      = $id('sSpeed');
 var sDur        = $id('sDur');
@@ -870,7 +887,6 @@ function applyText(){
   $id('lDlo').textContent   = t('lDlo');
   $id('lDhi').textContent   = t('lDhi');
   btnRs.textContent         = t('btnRs');
-  if(btnGyro) btnGyro.textContent = t('btnGyro');
   $id('mCh').textContent    = t('mCh');
   if(!G.running) sStat.textContent = t('stReady');
   $id('mTitle').textContent = t('mTitle');
@@ -1850,41 +1866,49 @@ document.addEventListener('touchend',    function(){ if(!gyroActive) G.sliderAct
 document.addEventListener('touchcancel', function(){ if(!gyroActive) G.sliderActive=false; });
 
 // Gyro Logic
-if (window.DeviceOrientationEvent) {
-  btnGyro.style.display = 'inline-block';
-}
+var wModeMan = $id('wModeMan');
+var wModeGyro = $id('wModeGyro');
+var cpanel = document.querySelector('.cpanel');
 
-btnGyro.addEventListener('click', function() {
-  if (gyroActive) {
-    gyroActive = false;
-    btnGyro.style.background = '';
-    btnGyro.style.color = '';
-    btnGyro.style.borderColor = '';
-    G.sliderPos = 0;
-    steerSlider.value = 0;
-    return;
-  }
+wModeMan.addEventListener('click', function() {
+  gyroActive = false;
+  wModeMan.classList.add('act');
+  wModeGyro.classList.remove('act');
+  cpanel.classList.remove('gyro-mode');
+  G.sliderPos = 0;
+  steerSlider.value = 0;
+});
 
-  if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+wModeGyro.addEventListener('click', function() {
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
     DeviceOrientationEvent.requestPermission()
       .then(function(permissionState) {
         if (permissionState === 'granted') {
           enableGyro();
         } else {
           alert(t('gyroErr'));
+          wModeMan.click();
         }
       })
-      .catch(function(console) { alert(t('gyroErr')); });
-  } else {
+      .catch(function(console) { 
+        alert(t('gyroErr')); 
+        wModeMan.click();
+      });
+  } else if (window.DeviceOrientationEvent) {
     enableGyro();
+  } else {
+    alert(t('gyroErr'));
+    wModeMan.click();
   }
 });
 
 function enableGyro() {
   gyroActive = true;
-  btnGyro.style.background = 'rgba(34,197,94,.15)';
-  btnGyro.style.color = '#22c55e';
-  btnGyro.style.borderColor = '#22c55e';
+  wModeGyro.classList.add('act');
+  wModeMan.classList.remove('act');
+  cpanel.classList.add('gyro-mode');
+  G.sliderPos = 0;
+  steerSlider.value = 0;
 }
 
 window.addEventListener('deviceorientation', function(e) {
@@ -2129,6 +2153,8 @@ function applyWelcomeText(){
   $id('wcL2').textContent=t('wcL2'); $id('wcV2').textContent=t('wcV2');
   $id('wcL3').textContent=t('wcL3'); $id('wcV3').textContent=t('wcV3');
   $id('wcL4').textContent=t('wcL4'); $id('wcV4').textContent=t('wcV4');
+  $id('wModeMan').textContent=t('wModeMan');
+  $id('wModeGyro').textContent=t('wModeGyro');
   $id('wDismiss').textContent=t('wDismiss');
   // sync welcome lang toggle buttons
   $id('wBtnEN').classList.toggle('active', lang==='en');
