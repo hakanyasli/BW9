@@ -1,0 +1,1998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Bullwhip Effect Simulator v0.9</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;}
+
+:root{
+  --bg:#f2f1ed;--bg2:#ffffff;--bg3:rgba(0,0,0,0.04);
+  --border:rgba(0,0,0,0.09);--border2:rgba(0,0,0,0.14);
+  --text:#1a1a2e;--text2:#555;--text3:#999;
+}
+body.dark{
+  --bg:#0a0a0f;--bg2:#13131c;--bg3:rgba(255,255,255,0.03);
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+  --text:#e8e6e3;--text2:#aaa;--text3:#555;
+}
+body{background:var(--bg);color:var(--text);font-family:'Outfit',sans-serif;overflow-x:hidden;transition:background .3s,color .3s;}
+
+.app{max-width:100%;margin:0 auto;padding:8px 10px 0;}
+
+/* HEADER */
+.hrow{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;gap:6px;}
+.hcenter{text-align:center;flex:1;min-width:0;}
+.hcenter h1{font-size:clamp(15px,4vw,22px);font-weight:800;background:linear-gradient(135deg,#f97316,#ef4444,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.2;margin-bottom:1px;}
+.hcenter .sub{font-size:clamp(10px,2.2vw,12px);color:var(--text3);font-weight:300;}
+.ver{font-size:9px;font-weight:600;color:#f97316;opacity:.6;margin-left:3px;vertical-align:middle;}
+.hleft,.hright{display:flex;align-items:center;gap:5px;flex-shrink:0;}
+.icon-btn{background:none;border:1px solid var(--border2);border-radius:20px;padding:4px 8px;cursor:pointer;font-size:13px;color:var(--text2);transition:all .2s;white-space:nowrap;}
+.icon-btn:hover{border-color:#f97316;color:#f97316;}
+.lang-btn{background:none;border:2px solid transparent;border-radius:6px;cursor:pointer;font-size:18px;padding:1px 3px;line-height:1;transition:all .15s;opacity:.35;}
+.lang-btn.active{border-color:#f97316;opacity:1;}
+.help-btn{background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.35);border-radius:50%;width:28px;height:28px;color:#f97316;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.help-btn:hover{background:rgba(249,115,22,.3);}
+
+/* STATS */
+.prog{width:100%;height:3px;background:rgba(128,128,128,.12);border-radius:2px;overflow:hidden;margin-bottom:5px;}
+.prog-fill{height:100%;background:linear-gradient(90deg,#22c55e,#f97316,#ef4444);border-radius:2px;width:0%;transition:width .1s linear;}
+.stats{display:flex;justify-content:center;margin-bottom:5px;padding:6px 8px;background:var(--bg3);border-radius:10px;border:1px solid var(--border);}
+.stat{text-align:center;flex:1;}
+.stat-l{font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;}
+.stat-v{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;color:var(--text);}
+.stat-v.good{color:#22c55e;}.stat-v.warn{color:#f97316;}.stat-v.bad{color:#ef4444;}
+
+/* CANVAS */
+.game-wrap{position:relative;border-radius:12px 12px 0 0;overflow:hidden;border:1px solid var(--border);border-bottom:none;background:#0e1b0e;width:100%;}
+canvas{display:block;width:100%;height:auto;}
+.fog-overlay{position:absolute;top:0;left:0;right:0;pointer-events:none;z-index:5;height:0;}
+body.dark .fog-overlay{background:linear-gradient(to bottom,#0a0a0f 0%,#0a0a0f 52%,rgba(10,10,15,0) 100%);}
+body:not(.dark) .fog-overlay{background:linear-gradient(to bottom,#1a2a1a 0%,#1a2a1a 52%,rgba(26,42,26,0) 100%);}
+
+/* overlay text — bigger, readable on mobile */
+.overlay{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;z-index:10;width:90%;}
+.tooltip{position:fixed;background:rgba(0,0,0,0.9);color:#fff;padding:8px 12px;border-radius:6px;font-size:12px;line-height:1.4;z-index:400;pointer-events:none;opacity:0;transition:opacity .2s;max-width:240px;border:1px solid #f97316;box-shadow:0 4px 12px rgba(0,0,0,0.5);}
+.info-btn{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:rgba(128,128,128,0.2);color:var(--text3);font-size:9px;font-weight:700;font-style:italic;cursor:help;margin-left:4px;border:1px solid rgba(128,128,128,0.3);}
+.info-btn:hover{background:#f97316;color:#fff;border-color:#f97316;}
+.overlay h2{font-size:clamp(22px,6vw,32px);font-weight:800;margin-bottom:8px;}
+.overlay p{font-size:clamp(13px,3vw,16px);color:var(--text2);line-height:1.5;}
+.overlay.rdy h2{color:#f97316;}.overlay.fin h2{color:#22c55e;}
+
+/* CONTROL PANEL */
+.cpanel{background:var(--bg3);border:1px solid var(--border);border-top:none;border-radius:0 0 12px 12px;padding:8px 12px 10px;margin-bottom:10px;}
+.tri-wrap{position:relative;width:100%;height:14px;margin-bottom:3px;}
+.tri-center{position:absolute;left:50%;top:0;width:1px;height:100%;background:rgba(128,128,128,.1);transform:translateX(-50%);}
+.tri{position:absolute;top:1px;left:50%;width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:11px solid #f97316;transform:translateX(-50%);filter:drop-shadow(0 0 4px rgba(249,115,22,.7));transition:left .04s;}
+.steer-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:7px;}
+.steer-wrap{flex:1;}
+.steer-btn{width:44px;height:44px;border-radius:10px;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none;-webkit-user-select:none;transition:all .12s;touch-action:none;flex-shrink:0;}
+.steer-btn:hover{background:rgba(128,128,128,.1);}
+.steer-btn.act{background:rgba(59,130,246,.25);border-color:#3b82f6;color:#3b82f6;}
+.steer-range{-webkit-appearance:none;appearance:none;width:100%;height:26px;border-radius:4px;background:#222;border:2px solid #555;outline:none;cursor:pointer;box-shadow:inset 1px 1px 0 #111,inset -1px -1px 0 #666,2px 2px 0 #000;display:block;}
+.steer-range::-webkit-slider-runnable-track{height:26px;border-radius:3px;background:linear-gradient(to bottom,#2a2a34,#1a1a24,#2a2a34);}
+.steer-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:32px;height:30px;border-radius:4px;background:linear-gradient(to bottom,#eee,#bbb,#999);border:2px solid #777;box-shadow:inset 1px 1px 0 #fff,inset -1px -1px 0 #666,1px 1px 3px rgba(0,0,0,.5);cursor:grab;margin-top:-2px;}
+.steer-range::-moz-range-thumb{width:30px;height:28px;border-radius:4px;background:linear-gradient(to bottom,#eee,#bbb,#999);border:2px solid #777;cursor:grab;}
+
+/* Config sliders — responsive grid: 4-col wide, 2x2 medium, 1-col narrow. NEVER 3+1. */
+.cfg-row{display:grid;grid-template-columns:repeat(4,auto);gap:8px 14px;justify-content:center;align-items:start;margin-top:2px;}
+.cfg-row .cfg-extras{grid-column:1/-1;display:flex;gap:12px;align-items:center;justify-content:center;margin-top:2px;}
+@media(max-width:640px){
+  .cfg-row{grid-template-columns:repeat(2,1fr);}
+  .cfg-row .delay-wrap,.cfg-row .cg{width:100%;}
+  .cfg-range{width:100%!important;flex:1;}
+}
+@media(max-width:360px){
+  .cfg-row{grid-template-columns:1fr;}
+  .cg label{font-size:11px;}
+  .cv{font-size:13px;}
+}
+
+.cg{display:flex;align-items:center;gap:5px;}
+.cg label{font-size:10px;color:var(--text3);font-weight:500;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;}
+.cv{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:#f97316;min-width:30px;text-align:center;}
+.cv.bl{color:#3b82f6;}.cv.gr{color:#22c55e;}.cv.pu{color:#a855f7;}
+.delay-wrap{display:flex;flex-direction:column;gap:1px;}
+.delay-inner{display:flex;align-items:center;gap:5px;}
+.delay-ends{display:flex;justify-content:space-between;padding:0 1px;}
+.dlbl{font-size:9px;font-style:italic;}
+.dlbl.lo{color:#22c55e88;}.dlbl.hi{color:#ef444488;}
+.cfg-range{-webkit-appearance:none;appearance:none;width:72px;height:5px;border-radius:3px;background:rgba(128,128,128,.15);outline:none;cursor:pointer;border:none;padding:0;}
+.cfg-range::-webkit-slider-runnable-track{height:5px;border-radius:3px;background:rgba(128,128,128,.15);}
+.cfg-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:24px;height:24px;border-radius:50%;background:#f97316;cursor:pointer;box-shadow:0 0 6px rgba(249,115,22,.5);margin-top:-9.5px;border:none;}
+.cfg-range.bl::-webkit-slider-thumb{background:#3b82f6;box-shadow:0 0 6px rgba(59,130,246,.5);}
+.cfg-range.gr::-webkit-slider-thumb{background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,.5);}
+.cfg-range.pu::-webkit-slider-thumb{background:#a855f7;box-shadow:0 0 6px rgba(168,85,247,.5);}
+.cfg-range::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:#f97316;cursor:pointer;border:none;}
+.cfg-range.bl::-moz-range-thumb{background:#3b82f6;}.cfg-range.gr::-moz-range-thumb{background:#22c55e;}.cfg-range.pu::-moz-range-thumb{background:#a855f7;}
+.cfg-range:disabled{opacity:.22;cursor:not-allowed;}
+.btn-row{display:flex;gap:7px;align-items:center;}
+.btn{font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;border:none;border-radius:8px;padding:9px 18px;cursor:pointer;transition:all .2s;}
+.btn-go{background:#f97316;color:#fff;}.btn-go:hover{background:#ea580c;}
+.btn-go:disabled{opacity:.35;cursor:not-allowed;}
+.btn-rs{background:var(--bg3);color:var(--text2);border:1px solid var(--border2);}
+.btn-rs:hover{background:rgba(128,128,128,.12);}
+.snd-wrap{display:flex;align-items:center;gap:5px;}
+.snd-wrap label{font-size:10px;color:var(--text3);text-transform:uppercase;cursor:pointer;}
+.snd-cb{width:15px;height:15px;accent-color:#f97316;cursor:pointer;}
+
+/* RESULT MODAL */
+.mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:200;align-items:center;justify-content:center;padding:14px;}
+.mo.vis{display:flex;}
+.md{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:20px;max-width:400px;width:100%;text-align:center;max-height:88vh;overflow-y:auto;}
+.md h2{font-size:19px;font-weight:800;color:#f97316;margin-bottom:12px;}
+.md-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.md-cell{background:var(--bg3);border-radius:10px;padding:9px;border:1px solid var(--border);}
+.md-cell .ml{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;}
+.md-cell .mv{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;margin-top:3px;}
+.mv.grn{color:#22c55e;}.mv.red{color:#ef4444;}.mv.org{color:#f97316;}.mv.blu{color:#3b82f6;}
+.md-msg{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:14px;}
+.md .btn-row{justify-content:center;}
+
+/* WELCOME POPUP */
+.wmo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:300;align-items:flex-start;justify-content:center;padding:12px;overflow-y:auto;}
+.wmo.vis{display:flex;}
+.wbox{background:var(--bg2);border:1px solid rgba(249,115,22,.25);border-radius:16px;padding:22px 20px 20px;max-width:440px;width:100%;margin:auto;}
+
+/* Lang toggle inside welcome */
+.wlang{display:flex;justify-content:space-between;gap:6px;margin-bottom:14px;align-items:center;}
+
+.wbox h2{font-size:20px;font-weight:800;background:linear-gradient(135deg,#f97316,#ef4444);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:2px;}
+.wver{font-size:11px;color:var(--text3);margin-bottom:14px;}
+.dev-badge{display:inline-flex;align-items:center;gap:5px;background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:11px;color:var(--text2);margin-bottom:14px;}
+.dev-badge span{color:#f97316;font-weight:600;}
+.whint{font-size:12px;color:var(--text3);background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.15);border-radius:8px;padding:8px 12px;margin-bottom:14px;text-align:center;}
+.whint strong{color:#f97316;}
+.wsteps{display:flex;flex-direction:column;gap:10px;margin-bottom:16px;}
+.wstep{display:flex;gap:12px;align-items:flex-start;background:var(--bg3);border-radius:10px;padding:11px 12px;border:1px solid var(--border);}
+.wsn{width:24px;height:24px;border-radius:50%;background:rgba(249,115,22,.18);color:#f97316;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.wst{font-size:14px;color:var(--text2);line-height:1.55;}
+.wst strong{color:var(--text);}
+.wctrl{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px;}
+.wci{background:var(--bg3);border-radius:8px;padding:9px 11px;border:1px solid var(--border);}
+.wcl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;}
+.wcv{font-size:12px;color:var(--text2);line-height:1.4;}
+.wdismiss{width:100%;padding:13px;background:#f97316;color:#fff;border:none;border-radius:10px;font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:background .2s;}
+.wdismiss:hover{background:#ea580c;}
+
+/* EXPLANATION */
+.expl{background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:18px;}
+.expl h3{font-size:16px;font-weight:700;margin-bottom:8px;color:#f97316;}
+.expl p{font-size:13px;line-height:1.75;color:var(--text2);margin-bottom:8px;}
+.expl p:last-child{margin-bottom:0;}
+.expl strong{color:var(--text);}
+
+/* Explanation grid — responsive, BBC-style */
+.ag{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0;}
+@media(max-width:480px){.ag{grid-template-columns:1fr;}}
+.ac{background:var(--bg3);border-radius:9px;padding:11px;border:1px solid var(--border);}
+.ac .al{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:4px;}
+.ac .al.gm{color:#3b82f6;}.ac .al.sc{color:#f97316;}
+.ac .at{font-size:12px;color:var(--text2);line-height:1.55;}
+
+#rSec{margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:none;}
+#rSec.vis{display:block;}
+#rSec h4{font-size:13px;font-weight:600;color:var(--text);margin-bottom:5px;}
+#rTxt{font-size:12px;color:var(--text2);line-height:1.6;}
+
+/* FOOTER — single link on the name */
+.foot{text-align:center;padding:14px 0 22px;font-size:12px;color:var(--text3);letter-spacing:.4px;border-top:1px solid var(--border);margin-top:14px;}
+.foot a{color:#f97316;text-decoration:underline;text-underline-offset:3px;transition:color .2s;}
+.foot a:hover{color:#fb923c;}
+
+/* CHART MODAL — full-screen on mobile, centered on desktop */
+.chart-mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:250;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.chart-mo.vis{display:block;}
+.chart-box{background:var(--bg2);max-width:640px;width:100%;margin:0 auto;min-height:100vh;padding:14px 12px 30px;}
+@media(min-width:641px){
+  .chart-box{min-height:auto;margin:20px auto;border-radius:16px;border:1px solid rgba(249,115,22,.25);padding:22px 20px 28px;}
+}
+.chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.chart-header h2{font-size:17px;font-weight:800;background:linear-gradient(135deg,#f97316,#ef4444);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:0;flex:1;line-height:1.3;}
+.chart-close-btn{background:none;border:1px solid var(--border2);border-radius:50%;width:32px;height:32px;color:var(--text2);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.chart-close-btn:hover{border-color:#f97316;color:#f97316;}
+/* Chart legend: 4-col on wide, 2x2 on medium, 1-col on narrow. NEVER 3+1. */
+.chart-legend{display:grid;grid-template-columns:repeat(4,auto);gap:8px 20px;justify-content:center;margin:0 auto 14px;}
+@media(max-width:640px){.chart-legend{grid-template-columns:repeat(2,auto);}}
+@media(max-width:360px){.chart-legend{grid-template-columns:1fr;}}
+.chart-leg-item{display:flex;align-items:center;gap:8px;font-size:clamp(11px,2.6vw,14px);color:var(--text2);font-weight:500;}
+.leg-swatch{width:24px;height:5px;border-radius:3px;display:inline-block;}
+.leg-swatch-area{width:14px;height:14px;border-radius:2px;display:inline-block;vertical-align:middle;}
+.leg-demand{background:#3b82f6;}
+.leg-action{background:#f97316;}
+.leg-over{background:rgba(239,68,68,0.35);border:1px solid rgba(239,68,68,0.6);}
+.leg-under{background:rgba(249,163,22,0.35);border:1px solid rgba(249,163,22,0.6);}
+.chart-labels-y{display:flex;justify-content:space-between;padding:0 4px;margin-bottom:3px;}
+.chart-y-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;}
+.chart-y-center{opacity:.5;}
+
+/* Scrollable chart area with thick retro scrollbar */
+.chart-scroll-wrap{width:100%;overflow-x:auto;overflow-y:hidden;border:1px solid var(--border);border-radius:8px;background:rgba(0,0,0,.18);-webkit-overflow-scrolling:touch;position:relative;}
+.chart-scroll-wrap canvas{display:block;height:220px;}
+@media(max-width:480px){.chart-scroll-wrap canvas{height:180px;}}
+@media(min-width:641px){.chart-scroll-wrap canvas{height:260px;}}
+/* Thick 90s-style scrollbar */
+.chart-scroll-wrap::-webkit-scrollbar{height:18px;}
+.chart-scroll-wrap::-webkit-scrollbar-track{background:rgba(128,128,128,0.15);border-radius:0 0 8px 8px;}
+.chart-scroll-wrap::-webkit-scrollbar-thumb{background:linear-gradient(to bottom,#bbb,#888,#666);border-radius:4px;border:2px solid rgba(0,0,0,0.2);min-width:60px;}
+.chart-scroll-wrap::-webkit-scrollbar-thumb:hover{background:linear-gradient(to bottom,#ddd,#aaa,#888);}
+/* Firefox thick scrollbar */
+.chart-scroll-wrap{scrollbar-width:auto;scrollbar-color:#888 rgba(128,128,128,0.15);}
+
+/* Desktop and mobile scroll buttons — always visible */
+.chart-nav-row{display:flex;justify-content:center;gap:10px;margin-top:8px;}
+.chart-nav-btn{width:48px;height:36px;border-radius:8px;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;user-select:none;-webkit-user-select:none;}
+.chart-nav-btn:hover{border-color:#f97316;color:#f97316;background:rgba(249,115,22,.1);}
+.chart-nav-btn:active{transform:scale(0.95);}
+
+.chart-x-label{text-align:center;font-size:10px;color:var(--text3);margin-top:4px;text-transform:uppercase;letter-spacing:.5px;}
+.chart-scroll-hint{text-align:center;font-size:12px;color:#f97316;opacity:.7;margin:6px 0 2px;animation:pulse-hint 2s ease-in-out infinite;}
+@keyframes pulse-hint{0%,100%{opacity:.4;}50%{opacity:.9;}}
+.chart-amp-badge{text-align:center;margin:12px 0 4px;font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:#f97316;letter-spacing:.5px;}
+.chart-amp-sub{text-align:center;font-size:11px;color:var(--text3);margin-bottom:10px;}
+.chart-explain{font-size:13px;color:var(--text2);line-height:1.7;padding:0 4px;margin-bottom:12px;}
+.chart-explain strong{color:var(--text);}
+.chart-explain .ce-head{font-size:14px;font-weight:700;color:#f97316;margin-top:14px;margin-bottom:4px;}
+.chart-explain .ce-analogy{background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.15);border-radius:8px;padding:10px 12px;margin:10px 0;font-size:12px;line-height:1.6;}
+.chart-explain .ce-analogy strong{color:#3b82f6;}
+
+/* Scenario params grid */
+.ch-params{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0;}
+@media(max-width:380px){.ch-params{grid-template-columns:1fr;}}
+.ch-param{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px 12px;}
+.ch-param-label{font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:3px;}
+.ch-param-val{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;margin-bottom:2px;}
+.ch-param-val.lo{color:#22c55e;}.ch-param-val.md{color:#f97316;}.ch-param-val.hi{color:#ef4444;}
+.ch-param-desc{font-size:11px;color:var(--text2);line-height:1.45;}
+
+/* Financial outcome */
+.ch-finance{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:14px;margin:14px 0;text-align:center;}
+.ch-fin-icon{font-size:36px;margin-bottom:6px;}
+.ch-fin-headline{font-size:16px;font-weight:800;margin-bottom:6px;line-height:1.3;}
+.ch-fin-headline.profit{color:#22c55e;}
+.ch-fin-headline.loss{color:#f97316;}
+.ch-fin-headline.bankrupt{color:#ef4444;}
+.ch-fin-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0;text-align:center;}
+.ch-fin-cell{background:rgba(0,0,0,.06);border-radius:8px;padding:8px;}
+body.dark .ch-fin-cell{background:rgba(255,255,255,.03);}
+.ch-fin-cell-label{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:2px;}
+.ch-fin-cell-val{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;}
+.ch-fin-cell-val.red{color:#ef4444;}.ch-fin-cell-val.grn{color:#22c55e;}.ch-fin-cell-val.org{color:#f97316;}
+.ch-fin-detail{font-size:12px;color:var(--text2);line-height:1.6;margin-top:8px;text-align:left;}
+
+/* Stock zone labels in legend */
+.leg-over{background:rgba(239,68,68,0.35);}
+.leg-under{background:rgba(249,115,22,0.35);}
+
+/* Advice box */
+.ch-advice{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:10px;padding:12px 14px;margin:12px 0;font-size:12px;line-height:1.65;color:var(--text2);}
+.ch-advice strong{color:#22c55e;}
+.ch-advice .adv-head{font-size:13px;font-weight:700;color:#22c55e;margin-bottom:4px;}
+
+.chart-close-bottom{width:100%;font-size:14px;margin-top:8px;}
+.btn-export{background:var(--bg3);color:var(--text2);border:1px solid var(--border2);margin-top:8px;}
+.btn-export:hover{background:rgba(128,128,128,.12);}
+</style>
+</head>
+<body class="dark">
+
+<!-- WELCOME POPUP -->
+<div class="wmo" id="wmo">
+  <div class="wbox">
+<!-- #1 Lang & Theme toggle inside welcome -->
+<div class="wlang">
+  <button class="icon-btn" id="wThemeBtn">☀</button>
+  <div style="display:flex;gap:6px;">
+    <button class="lang-btn active" id="wBtnEN" title="English">🇬🇧</button>
+    <button class="lang-btn" id="wBtnTR" title="Türkçe">🇹🇷</button>
+  </div>
+</div>
+    <h2 id="wTitle">Steering Delay Simulator</h2>
+    <div class="wver" id="wVer">v0.8 — Bullwhip Effect Demo</div>
+    <div style="text-align:center;margin-bottom:12px">
+      <div class="dev-badge"><span id="devIcon">📱</span><span id="devTxt">Detecting…</span></div>
+    </div>
+    <div class="whint" id="wHint">Tap <strong>?</strong> anytime to reopen this guide.</div>
+    <div class="wsteps">
+      <div class="wstep"><div class="wsn">1</div><div class="wst" id="ws1"></div></div>
+      <div class="wstep"><div class="wsn">2</div><div class="wst" id="ws2"></div></div>
+      <div class="wstep"><div class="wsn">3</div><div class="wst" id="ws3"></div></div>
+      <div class="wstep"><div class="wsn">4</div><div class="wst" id="ws4"></div></div>
+    </div>
+    <div class="wctrl">
+      <div class="wci"><div class="wcl" id="wcL1"></div><div class="wcv" id="wcV1"></div></div>
+      <div class="wci"><div class="wcl" id="wcL2"></div><div class="wcv" id="wcV2"></div></div>
+      <div class="wci"><div class="wcl" id="wcL3"></div><div class="wcv" id="wcV3"></div></div>
+      <div class="wci"><div class="wcl" id="wcL4"></div><div class="wcv" id="wcV4"></div></div>
+    </div>
+    <button class="wdismiss" id="wDismiss">Let's Drive ▶</button>
+    <div style="text-align:center;padding-top:14px;margin-top:14px;border-top:1px solid var(--border);font-size:11px;color:var(--text3);letter-spacing:.4px;">
+      <a href="https://scholar.google.com/citations?user=O5LOOKYAAAAJ&hl=tr" target="_blank" rel="noopener" style="color:#f97316;text-decoration:underline;">Prof. Dr. Erkut AKKARTAL</a>
+      &nbsp;|&nbsp;
+      <a href="https://yeditepe.edu.tr/tr" target="_blank" rel="noopener" style="color:#f97316;text-decoration:underline;">Yeditepe Üniversitesi</a>
+      &nbsp;|&nbsp; 2026
+    </div>
+  </div>
+</div>
+
+<div class="app">
+  <div class="hrow">
+    <div class="hleft">
+      <button class="icon-btn" id="themeBtn">☀</button>
+    </div>
+    <div class="hcenter">
+      <h1>Bullwhip Effect Simulator <span class="ver">v0.8.5</span></h1>
+      <div class="sub" id="hSub">Experience the Bullwhip Effect</div>
+    </div>
+    <div class="hright">
+      <div style="display:flex;gap:3px;">
+        <button class="lang-btn active" id="btnEN" title="English">🇬🇧</button>
+        <button class="lang-btn" id="btnTR" title="Türkçe">🇹🇷</button>
+      </div>
+      <button class="help-btn" id="helpBtn">?</button>
+    </div>
+  </div>
+
+  <div class="prog"><div class="prog-fill" id="pFill"></div></div>
+  <div class="stats">
+    <div class="stat"><div class="stat-l" id="lTime">Time</div><div class="stat-v" id="sTime">0.0s</div></div>
+    <div class="stat"><div class="stat-l" id="lRoad">On Road</div><div class="stat-v good" id="sRoad">100%</div></div>
+    <div class="stat"><div class="stat-l" id="lViol">Violations</div><div class="stat-v" id="sViol">0</div></div>
+    <div class="stat"><div class="stat-l" id="lStatus">Status</div><div class="stat-v" id="sStat">Ready</div></div>
+  </div>
+
+  <div class="game-wrap" id="gameWrap">
+    <canvas id="gc" width="1200"></canvas>
+    <div class="fog-overlay" id="fogOverlay"></div>
+    <!-- overlay hidden; play button drawn on canvas -->
+    <div class="overlay rdy" id="oMsg" style="display:none;">
+      <h2 id="oMsgH">Press Start</h2>
+      <p id="oMsgP">Set controls below — then tap ▶ or hit Space</p>
+    </div>
+  </div>
+
+  <div class="cpanel">
+    <div class="steer-row">
+      <button class="steer-btn" id="bL">◀</button>
+      <div class="steer-wrap">
+        <div class="tri-wrap">
+          <div class="tri-center"></div>
+          <div class="tri" id="actTri"></div>
+        </div>
+        <input type="range" class="steer-range" id="steerSlider" min="-100" max="100" value="0" step="1">
+      </div>
+      <button class="steer-btn" id="bR">▶</button>
+    </div>
+    <div class="cfg-row">
+      <div class="delay-wrap">
+        <div class="delay-inner">
+          <label id="lDelay">Delay</label><span class="info-btn" data-tt="ttDelay">i</span>
+          <input type="range" class="cfg-range" id="sDelay" min="0" max="30" value="30" step="1">
+          <span class="cv" id="dDelay">30</span>
+        </div>
+        <div class="delay-ends">
+          <span class="dlbl lo" id="lDlo">0 = Instant</span>
+          <span class="dlbl hi" id="lDhi">30 = Total Loss</span>
+        </div>
+      </div>
+      <div class="cg">
+        <label id="lSpeed">Speed</label><span class="info-btn" data-tt="ttSpeed">i</span>
+        <input type="range" class="cfg-range bl" id="sSpeed" min="1" max="8" value="8" step="1">
+        <span class="cv bl" id="dSpeed">8</span>
+      </div>
+      <div class="cg">
+        <label id="lDur">Duration</label><span class="info-btn" data-tt="ttDur">i</span>
+        <input type="range" class="cfg-range gr" id="sDur" min="15" max="60" value="60" step="5">
+        <span class="cv gr" id="dDur">60s</span>
+      </div>
+      <div class="cg">
+        <label id="lHL">Headlight</label><span class="info-btn" data-tt="ttHL">i</span>
+        <input type="range" class="cfg-range pu" id="sFog" min="20" max="100" value="70" step="5">
+        <span class="cv pu" id="dFog">70m</span>
+      </div>
+      <div class="cfg-extras">
+        <div class="snd-wrap">
+          <input type="checkbox" class="snd-cb" id="sndCb" checked>
+          <label for="sndCb" id="lSound">Sound</label>
+        </div>
+        <button class="btn btn-rs" id="btnRs">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Result Modal -->
+  <div class="mo" id="mo">
+    <div class="md">
+      <h2 id="mTitle">Run Complete</h2>
+      <div class="md-grid">
+        <div class="md-cell"><div class="ml" id="mLOn">On-Road</div><div class="mv grn" id="mOn">--</div></div>
+        <div class="md-cell"><div class="ml" id="mLOff">Off-Road</div><div class="mv red" id="mOff">--</div></div>
+        <div class="md-cell"><div class="ml" id="mLVio">Violations</div><div class="mv org" id="mVio">--</div></div>
+        <div class="md-cell"><div class="ml" id="mLDel">Delay</div><div class="mv blu" id="mDel">--</div></div>
+      </div>
+      <div class="md-msg" id="mMsg"></div>
+      <div class="btn-row" style="justify-content:center;margin-bottom:8px;">
+        <button class="btn btn-go" id="mCh" style="width:100%;font-size:15px;padding:12px;" >📊 View Chart</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart Modal — the lasting impression page -->
+  <div class="chart-mo" id="chartMo">
+    <div class="chart-box">
+      <div class="hrow" style="margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:10px;">
+        <div class="hleft">
+          <button class="icon-btn" id="chThemeBtn">☀</button>
+        </div>
+        <div class="hright">
+          <div style="display:flex;gap:3px;">
+            <button class="lang-btn active" id="chBtnEN" title="English">🇬🇧</button>
+            <button class="lang-btn" id="chBtnTR" title="Türkçe">🇹🇷</button>
+          </div>
+          <button class="help-btn" id="chHelpBtn">?</button>
+        </div>
+      </div>
+      <div class="chart-header">
+        <h2 id="chTitle">The Bullwhip Effect</h2>
+        <button class="chart-close-btn" id="chClose">✕</button>
+      </div>
+      <div class="chart-legend">
+        <span class="chart-leg-item"><span class="leg-swatch leg-demand"></span><span id="chLegDemand">Demand (Road)</span></span>
+        <span class="chart-leg-item"><span class="leg-swatch leg-action"></span><span id="chLegAction">Your Response (Car)</span></span>
+        <span class="chart-leg-item"><span class="leg-swatch-area leg-over"></span><span id="chLegOver">Overstock</span></span>
+        <span class="chart-leg-item"><span class="leg-swatch-area leg-under"></span><span id="chLegUnder">Understock</span></span>
+      </div>
+      <div class="chart-labels-y">
+        <span class="chart-y-label" id="chLeft">← Left</span>
+        <span class="chart-y-label chart-y-center" id="chCenter">Center</span>
+        <span class="chart-y-label" id="chRight">Right →</span>
+      </div>
+      <div class="chart-scroll-wrap" id="chartScrollWrap">
+        <canvas id="chartCanvas"></canvas>
+      </div>
+      <div class="chart-nav-row">
+        <button class="chart-nav-btn" id="chNavL">◀</button>
+        <span style="font-size:11px;color:var(--text3);align-self:center;" id="chNavHint">← → keys</span>
+        <button class="chart-nav-btn" id="chNavR">▶</button>
+      </div>
+      <div class="chart-x-label" id="chTime">Time →</div>
+      <div class="chart-scroll-hint" id="chScrollHint">← Scroll to explore →</div>
+      <div class="chart-amp-badge" id="chAmpBadge"></div>
+      <div class="chart-amp-sub" id="chAmpSub"></div>
+      <div class="ch-params" id="chParams"></div>
+      <div class="ch-finance" id="chFinance"></div>
+      <div class="ch-advice" id="chAdvice"></div>
+      <div class="chart-explain" id="chExplain"></div>
+      <button class="btn btn-go chart-close-bottom" id="chCloseBottom">Close</button>
+      <button class="btn btn-export chart-close-bottom" id="chExportBtn">Export Game Learnings</button>
+      <div class="foot">
+        <a href="https://scholar.google.com/citations?user=O5LOOKYAAAAJ&hl=tr" target="_blank" rel="noopener">Prof. Dr. Erkut AKKARTAL</a>
+        &nbsp;|&nbsp;
+        <a href="https://yeditepe.edu.tr/tr" target="_blank" rel="noopener">Yeditepe Üniversitesi</a>
+        &nbsp;|&nbsp; 2026
+      </div>
+    </div>
+  </div>
+
+  <div class="expl">
+    <h3 id="eTitle">What Is the Bullwhip Effect?</h3>
+    <p id="eP1"></p>
+    <p id="eP2"></p>
+    <div class="ag">
+      <div class="ac"><div class="al gm" id="eGG">In This Game</div><div class="at" id="eGGt"></div></div>
+      <div class="ac"><div class="al sc" id="eGS">In Supply Chains</div><div class="at" id="eGSt"></div></div>
+      <div class="ac"><div class="al gm" id="eFG">The Fix (Game)</div><div class="at" id="eFGt"></div></div>
+      <div class="ac"><div class="al sc" id="eFR">The Fix (Real World)</div><div class="at" id="eFRt"></div></div>
+    </div>
+    <div id="rSec"><h4 id="eHist">Session History</h4><div id="rTxt"></div></div>
+  </div>
+
+  <!-- #4 Footer: single link on the professor's name -->
+  <div class="foot">
+    <a href="https://scholar.google.com/citations?user=O5LOOKYAAAAJ&hl=tr" target="_blank" rel="noopener">Prof. Dr. Erkut AKKARTAL</a>
+    &nbsp;|&nbsp;
+    <a href="https://yeditepe.edu.tr/tr" target="_blank" rel="noopener">Yeditepe Üniversitesi</a>
+    &nbsp;|&nbsp; 2026
+  </div>
+</div>
+
+<div class="tooltip" id="tt"></div>
+
+<script>
+(function(){
+'use strict';
+
+// ═══════════════════════════════════════════════════════════════
+// I18N
+// ═══════════════════════════════════════════════════════════════
+var S={
+  en:{
+    hSub:'Experience the Bullwhip Effect',
+    lTime:'Time',lRoad:'On Road',lViol:'Violations',lStatus:'Status',
+    stReady:'Ready',stDriving:'Driving',stDone:'Done',
+    lDelay:'Delay',lSpeed:'Speed',lDur:'Duration',lHL:'Headlight',lSound:'Sound',
+    lDlo:'0 = Instant',lDhi:'15 = Chaos',
+    btnGo:'Start',btnRs:'Reset',mRe:'Play Again',mCl:'Close',mCh:'📊 What Do These Stats Mean?',
+    mTitle:'Run Complete',mLOn:'On-Road',mLOff:'Off-Road',mLVio:'Violations',mLDel:'Delay',
+    msg98:'Nearly perfect. Try increasing delay to see control degrade.',
+    msg90:'Good control, some wobble. Higher delay will make this much worse.',
+    msg70:'Significant off-road time. Delay causing overcorrection — like supply chain panic-ordering.',
+    msg0:'Loss of control. Delayed feedback = constant oscillation. The bullwhip effect.',
+    eTitle:'What Is the Bullwhip Effect?',
+    eP1:'In supply chains, <strong>information travels with delay</strong>. A small retail demand change gets amplified upstream — each stage overreacts seeing the signal late. A 10% retail increase can become a 40% factory surge. This is the <strong>Bullwhip Effect</strong>.',
+    eP2:'This simulator makes you <strong>feel</strong> it. At delay 0 your wheels respond instantly. As delay increases your input arrives late — you overcorrect, oscillate, drift off-road. <strong>Exactly what happens in supply chains without real-time visibility.</strong>',
+    eGG:'In This Game',eGGt:'You steer → response late → overcorrect → violations pile up',
+    eGS:'In Supply Chains',eGSt:'Demand changes → info arrives late → each stage overorders → chaos',
+    eFG:'The Fix (Game)',eFGt:'Delay 0 + full headlights = smooth control, 100% on-road',
+    eFR:'The Fix (Real World)',eFRt:'Real-time POS, IoT sensors, integrated ERP — eliminate the lag',
+    eHist:'Session History',
+    histPat:'Pattern: Low delay avg {lo}% vs high delay avg {hi}%. More lag = more chaos.',
+    complete:'Complete',completeSub:'On-road: {pct}% | Violations: {vio}',
+    hudTxt:'DELAY {d}  |  SPEED {s}  |  {dur}s',
+    histHdr:['#','Delay','Speed','Dur.','Hdlght','On-Road','Viol.','Fate'],
+    chartTitle:'The Bullwhip Effect — Your Run Visualised',
+    chartDemand:'Consumer Demand (Signal)',
+    chartAction:'Your Orders (Car)',
+    chartOffroadOver:'Excess Inventory (Overstock)',
+    chartOffroadUnder:'Lost Sales (Stockout)',
+    chartTime:'Time →',
+    chartLeft:'← Left',
+    chartRight:'Right →',
+    chartCenter:'Center',
+    chartScroll:'← Scroll to explore the full timeline →',
+    chartClose:'Return to Settings',
+    chartAmpLabel:'Amplification',
+    chartAmpSub:'Your response swings were {ratio}× wider than the demand signal',
+    chartExplain0:'<div class="ce-head">Perfect Tracking — No Bullwhip</div>With <strong>zero delay</strong>, your steering response closely followed the demand signal (road curves). The two lines nearly overlap — this is the ideal state.<div class="ce-analogy"><strong>Supply Chain Equivalent:</strong> When a retailer shares real-time POS (Point of Sale) data with all upstream partners — distributor, manufacturer, raw material supplier — everyone sees actual demand instantly. No guessing, no overreacting. Orders match reality. The bullwhip never forms.</div><div class="ce-head">Why This Matters</div>Companies like <strong>Zara</strong> and <strong>Dell</strong> built empires on this principle. Zara\'s stores transmit daily sales data directly to factories. Dell\'s build-to-order model eliminated forecast-driven inventory entirely. Both achieved what you just did: response = signal.',
+    chartExplainLow:'<div class="ce-head">Mild Amplification — Early Bullwhip</div>A small information lag caused your response (orange) to <strong>overshoot</strong> the demand signal (blue). You corrected, but slightly late — so each correction was a bit too large.<div class="ce-analogy"><strong>Supply Chain Equivalent:</strong> A retailer sees a 10% demand increase on Monday but only orders from the distributor on Friday. By then, shelves are empty so they order 20% extra "just in case." The distributor sees the 20% spike and orders 30% more from the factory. A small real change has already doubled.</div><div class="ce-head">The Mechanism</div>This is <strong>demand signal processing</strong> — each stage interprets the delayed, distorted signal and adds its own safety margin. Even a small delay triggers a chain reaction of overcorrection.',
+    chartExplainHigh:'<div class="ce-head">Severe Amplification — Full Bullwhip Effect</div>The demand signal (blue) swung gently. But your response (orange) swung <strong>violently</strong> — wider, wilder, and always too late. This is the Bullwhip Effect at full force.<div class="ce-analogy"><strong>Supply Chain Equivalent:</strong> A 5% increase in consumer demand at the retail level becomes a 10% order increase at the distributor, a 20% surge at the manufacturer, and a 40% panic order to the raw material supplier. Each stage, seeing the signal later and more distorted, overreacts even more. Factories ramp up production. Then when the overshoot becomes visible, everyone slashes orders — creating the opposite crisis: excess inventory, cancelled orders, layoffs.</div><div class="ce-head">The Four Root Causes (Lee, Padmanabhan & Whang, 1997)</div><strong>1. Demand Signal Processing</strong> — Each stage forecasts from its downstream orders (not actual consumer demand), adding layers of distortion.<br><strong>2. Order Batching</strong> — Companies accumulate demand and order in bulk (weekly/monthly), creating lumpy signals.<br><strong>3. Price Fluctuations</strong> — Promotions and discounts cause "forward buying" — ordering more than needed to stockpile at low prices.<br><strong>4. Shortage Gaming</strong> — When supply is limited, buyers inflate orders hoping to get a larger allocation, then cancel when supply normalises.<div class="ce-head">The Cure</div>What you experienced with <strong>delay = 0</strong> is the cure: <strong>eliminate information lag</strong>. In practice this means real-time POS sharing, IoT-enabled inventory tracking, integrated ERP/SCM systems, CPFR (Collaborative Planning, Forecasting & Replenishment), and VMI (Vendor Managed Inventory). The technology exists. The challenge is trust and coordination between trading partners.',
+    chartAmpNote:'Amplification ratio: {ratio}×',
+    // Scenario params
+    pDelay:'Information Delay',pSpeed:'Market Volatility',pHeadlight:'Forecast Horizon',pDuration:'Simulation Period',
+    pDelayDesc:'How long until stock counts and purchase orders reach upstream suppliers',
+    pSpeedDesc:'How rapidly consumer demand shifts — calm market vs volatile swings',
+    pHeadlightDesc:'How far ahead your demand forecasting can see with accuracy',
+    pDurationDesc:'The operating period over which your supply chain was tested',
+    pLo:'Low',pMd:'Medium',pHi:'High',pVHi:'Very High',pShort:'Short',pLong:'Long',
+    // Stock labels
+    lblOverstock:'OVERSTOCK',lblUnderstock:'STOCKOUT',
+    // Financial
+    finProfitIcon:'🏆',finLossIcon:'📉',finBankruptIcon:'💀',
+    finProfit:'Your company thrived!',
+    finModerate:'Your company survived, but with losses.',
+    finBankrupt:'Your company went bankrupt.',
+    fateProfit:'Thrived', fateLoss:'Loss', fateBankrupt:'Bankrupt',
+    finRevenue:'Revenue',finOverCost:'Overstock Cost',finUnderCost:'Stockout Cost',finNetResult:'Net Result',
+    finProfitDetail:'Strong demand tracking kept inventory aligned. Minimal waste, minimal missed sales. Your supply chain operated efficiently.',
+    finModerateDetail:'Delayed reactions caused inventory mismatches. You lost <strong>${over}</strong> in excess inventory holding costs (warehousing, depreciation, write-offs) and <strong>${under}</strong> in lost revenue from stockouts (missed sales, customer churn, brand damage).',
+    finBankruptDetail:'Catastrophic oscillation destroyed your margins. <strong>${over}</strong> was wasted on excess inventory that had to be written off, and <strong>${under}</strong> in revenue evaporated from empty shelves. The combined losses exceeded your capital reserves. <strong>Your company is insolvent.</strong> Go back, reduce your information delay, extend your forecast horizon, and try again with the wisdom you\'ve gained.',
+    // Advice
+    advHead:'Recommendations for Your Next Run',
+    advDelay:'<strong>Reduce Information Delay:</strong> Implement real-time POS data sharing, IoT inventory sensors, and integrated ERP systems. In the game: set Delay to 0–2.',
+    advHeadlight:'<strong>Extend Forecast Horizon:</strong> Invest in demand planning, machine learning forecasting, and collaborative planning (CPFR) with trading partners. In the game: set Headlight to 80–100.',
+    advSpeed:'<strong>When markets are volatile:</strong> shorter, more frequent ordering cycles outperform large batch orders. Agility beats efficiency in turbulent demand.',
+    advGeneral:'<strong>The core lesson:</strong> The Bullwhip Effect is not caused by demand variability — it is caused by <em>delayed visibility</em> of that variability. Eliminate the lag, eliminate the whip.',
+    tapResume:'Tap anywhere to resume',
+    wTitle:'Steering Delay Simulator',wVer:'v0.8.5 — Bullwhip Effect Demo',
+    wDevM:'Mobile — use slider or ◀ ▶ buttons',
+    wDevD:'Desktop — slider, buttons, or ← → / A D keys',
+    wHint:'Tap <strong>?</strong> anytime to reopen this guide.',
+    ws1:'<strong>Steer</strong> with the slider, ◀ ▶ step buttons, or arrow keys. The slider holds position — steer back to return to center.',
+    ws2:'Start with <strong>Delay = 0</strong>. Note your on-road %. Replay with Delay 8, then 15. Watch control collapse.',
+    ws3:'The <strong>orange ▼</strong> above the slider shows where your wheels actually point — lagging behind your input. That gap is the Bullwhip Effect.',
+    ws4:'The <strong>dark zone</strong> is fog — unknown future demand. Headlight distance sets your forecast horizon.',
+    wcL1:'Delay',wcV1:'Info lag (0=instant, 15=chaos)',
+    wcL2:'Speed',wcV2:'Road scroll speed',
+    wcL3:'Duration',wcV3:'Run length (seconds)',
+    wcL4:'Headlight',wcV4:'Forecast horizon',
+    wDismiss:"Let's Drive ▶",
+    /* #6 play button texts on canvas */
+    canvasReady:"Tap ▶ to Start",
+    canvasSub:'Adjust settings below first',
+    canvasHint:'Scroll down to adjust settings',
+    ttDelay:'Represents information lag. High delay means your steering input arrives late to the wheels, causing the Bullwhip Effect.',
+    ttSpeed:'How fast the road scrolls. Represents the rate of customer demand or general market volatility.',
+    ttDur:'Total time for one simulation run. Longer runs make it harder to maintain focus and control.',
+    ttHL:'How far ahead you can see before the fog. Represents your forecast horizon or supply chain visibility.'
+  },
+  tr:{
+    hSub:'Kamçı Etkisini Yaşayın',
+    lTime:'Süre',lRoad:'Yolda',lViol:'İhlal',lStatus:'Durum',
+    stReady:'Hazır',stDriving:'Sürüyor',stDone:'Bitti',
+    lDelay:'Gecikme',lSpeed:'Hız',lDur:'Süre',lHL:'Far',lSound:'Ses',
+    lDlo:'0 = Anında',lDhi:'15 = Kaos',
+    btnGo:'Başlat',btnRs:'Sıfırla',mRe:'Tekrar Oyna',mCl:'Kapat',mCh:'📊 Bu İstatistikler Ne Anlama Geliyor?',
+    mTitle:'Tur Tamamlandı',mLOn:'Yolda',mLOff:'Yol Dışı',mLVio:'İhlaller',mLDel:'Gecikme',
+    msg98:'Neredeyse mükemmel. Kontrolün nasıl bozulduğunu görmek için gecikmeyi artırın.',
+    msg90:'İyi kontrol, biraz sallanma. Daha yüksek gecikme çok daha kötü yapacak.',
+    msg70:'Önemli yol dışı süre. Gecikme aşırı düzeltmeye neden oluyor.',
+    msg0:'Kontrol kaybı. Gecikmeli geri bildirim sürekli salınım — kamçı etkisi.',
+    eTitle:'Kamçı Etkisi Nedir?',
+    eP1:'Tedarik zincirlerinde <strong>bilgi gecikmeli iletilir</strong>. Perakendedeki küçük bir talep değişikliği yukarıya büyür — her aşama geç görüp aşırı tepki verir. %10 artış fabrikada %40 dalgalanmaya dönüşebilir. Bu <strong>Kamçı Etkisi</strong>\'dir.',
+    eP2:'Bu simülatör bunu <strong>hissettiriir</strong>. Gecikme 0\'da tekerlek anında yanıt verir. Gecikme arttıkça girişiniz geç ulaşır — aşırı düzelirsiniz, salınıma girersiniz. <strong>Gerçek zamanlı görünürlük olmayan tedarik zincirinde olan budur.</strong>',
+    eGG:'Bu Oyunda',eGGt:'Direksiyon → yanıt geç → aşırı düzeltme → ihlaller',
+    eGS:'Tedarik Zincirinde',eGSt:'Talep değişir → bilgi geç → fazla sipariş → kaos',
+    eFG:'Çözüm (Oyun)',eFGt:'Gecikme 0 + tam far = akıcı kontrol, %100 yolda',
+    eFR:'Çözüm (Gerçek Dünya)',eFRt:'Gerçek zamanlı POS, IoT, entegre ERP — gecikmeyi kaldırın',
+    eHist:'Oturum Geçmişi',
+    histPat:'Örüntü: Düşük gecikme ort %{lo} — yüksek gecikme ort %{hi}.',
+    complete:'Tamamlandı',completeSub:'Yolda: %{pct} | İhlaller: {vio}',
+    hudTxt:'GECİKME {d}  |  HIZ {s}  |  {dur}s',
+    histHdr:['#','Gecikme','Hız','Süre','Far','Yolda','İhlal','Durum'],
+    chartTitle:'Kamçı Etkisi — Sürüş Analizi',
+    chartDemand:'Tüketici Talebi (Sinyal)',
+    chartAction:'Siparişleriniz (Araç)',
+    chartOffroadOver:'Fazla Stok (İsraf)',
+    chartOffroadUnder:'Kaçırılan Satış (Stok Yok)',
+    chartTime:'Zaman →',
+    chartLeft:'← Sol',
+    chartRight:'Sağ →',
+    chartCenter:'Merkez',
+    chartScroll:'← Tüm zaman çizelgesini görmek için kaydırın →',
+    chartClose:'Ayarlara Dön',
+    chartAmpLabel:'Büyütme',
+    chartAmpSub:'Tepki salınımlarınız talep sinyalinden {ratio} kat daha genişti',
+    chartExplain0:'<div class="ce-head">Mükemmel Takip — Kamçı Etkisi Yok</div><strong>Sıfır gecikme</strong> ile direksiyon tepkiniz talep sinyalini (yol eğrileri) yakından takip etti. İki çizgi neredeyse örtüşüyor — bu ideal durumdur.<div class="ce-analogy"><strong>Tedarik Zinciri Karşılığı:</strong> Bir perakendeci gerçek zamanlı satış noktası (POS) verilerini tüm üst akış ortaklarıyla paylaştığında — dağıtıcı, üretici, hammadde tedarikçisi — herkes gerçek talebi anında görür. Tahmin yok, aşırı tepki yok. Siparişler gerçekle eşleşir. Kamçı asla oluşmaz.</div><div class="ce-head">Neden Önemli</div><strong>Zara</strong> ve <strong>Dell</strong> gibi şirketler imparatorluklarını bu ilke üzerine kurdu. Zara mağazaları günlük satış verilerini doğrudan fabrikalara iletir. Dell\'in siparişe göre üretim modeli tahmine dayalı envanteri tamamen ortadan kaldırdı.',
+    chartExplainLow:'<div class="ce-head">Hafif Büyütme — Erken Kamçı</div>Küçük bir bilgi gecikmesi tepkinizin (turuncu) talep sinyalini (mavi) <strong>aşmasına</strong> neden oldu. Düzeltme yaptınız ama biraz geç — her düzeltme biraz fazla büyük oldu.<div class="ce-analogy"><strong>Tedarik Zinciri Karşılığı:</strong> Perakendeci Pazartesi %10 talep artışı görüyor ama dağıtıcıya ancak Cuma sipariş veriyor. O zamana kadar raflar boş, %20 fazla sipariş veriyor "her ihtimale karşı." Dağıtıcı %20 artışı görünce fabrikadan %30 fazla sipariş veriyor. Küçük bir gerçek değişiklik zaten ikiye katlandı.</div><div class="ce-head">Mekanizma</div>Bu <strong>talep sinyali işleme</strong>dir — her aşama gecikmiş, bozulmuş sinyali yorumlar ve kendi güvenlik marjını ekler.',
+    chartExplainHigh:'<div class="ce-head">Şiddetli Büyütme — Tam Kamçı Etkisi</div>Talep sinyali (mavi) hafifçe salındı. Ama tepkiniz (turuncu) <strong>şiddetle</strong> salındı — daha geniş, daha çılgın ve her zaman geç. Bu tam kamçı etkisidir.<div class="ce-analogy"><strong>Tedarik Zinciri Karşılığı:</strong> Perakende düzeyinde %5 tüketici talebi artışı dağıtıcıda %10, üreticide %20, hammadde tedarikçisinde %40 panik siparişe dönüşür. Her aşama sinyali daha geç ve daha bozuk görür, daha fazla aşırı tepki verir. Fabrikalar üretimi artırır. Sonra aşma görünür olduğunda herkes siparişleri keser — tam tersi kriz: fazla envanter, iptal edilen siparişler, işten çıkarmalar.</div><div class="ce-head">Dört Temel Neden (Lee, Padmanabhan ve Whang, 1997)</div><strong>1. Talep Sinyali İşleme</strong> — Her aşama gerçek tüketici talebi yerine alt akış siparişlerinden tahmin yapar.<br><strong>2. Sipariş Toplulaştırma</strong> — Şirketler talebi biriktirir ve toplu sipariş verir (haftalık/aylık).<br><strong>3. Fiyat Dalgalanmaları</strong> — Promosyonlar "ileri satın alma"ya neden olur — düşük fiyattan stok yapmak için gereğinden fazla sipariş.<br><strong>4. Kıtlık Oyunu</strong> — Arz sınırlı olduğunda alıcılar daha büyük tahsis almak için siparişleri şişirir, arz normalleşince iptal eder.<div class="ce-head">Çözüm</div><strong>Gecikme = 0</strong> ile deneyimlediğiniz çözümdür: <strong>bilgi gecikmesini ortadan kaldırın</strong>. Pratikte bu gerçek zamanlı POS paylaşımı, IoT destekli envanter takibi, entegre ERP/SCM sistemleri, CPFR (İşbirliğine Dayalı Planlama, Tahmin ve İkmal) ve VMI (Tedarikçi Yönetimli Envanter) anlamına gelir.',
+    chartAmpNote:'Büyütme oranı: {ratio}×',
+    pDelay:'Bilgi Gecikmesi',pSpeed:'Piyasa Oynaklığı',pHeadlight:'Tahmin Ufku',pDuration:'Simülasyon Süresi',
+    pDelayDesc:'Stok sayımları ve satın alma siparişlerinin üst akış tedarikçilere ulaşma süresi',
+    pSpeedDesc:'Tüketici talebinin ne kadar hızlı değiştiği — sakin piyasa ya da dalgalı salınımlar',
+    pHeadlightDesc:'Talep tahmininizin ne kadar ileriye doğrulukla görebildiği',
+    pDurationDesc:'Tedarik zincirinizin test edildiği işletme dönemi',
+    pLo:'Düşük',pMd:'Orta',pHi:'Yüksek',pVHi:'Çok Yüksek',pShort:'Kısa',pLong:'Uzun',
+    lblOverstock:'FAZLA STOK',lblUnderstock:'STOK YOK',
+    finProfitIcon:'🏆',finLossIcon:'📉',finBankruptIcon:'💀',
+    finProfit:'Şirketiniz başarılı oldu!',
+    finModerate:'Şirketiniz ayakta kaldı ama kayıplarla.',
+    finBankrupt:'Şirketiniz iflas etti.',
+    fateProfit:'Büyüdü', fateLoss:'Zarar', fateBankrupt:'İflas',
+    finRevenue:'Gelir',finOverCost:'Fazla Stok Maliyeti',finUnderCost:'Stok Dışı Maliyeti',finNetResult:'Net Sonuç',
+    finProfitDetail:'Güçlü talep takibi envanteri dengeye yakın tuttu. Minimum israf, minimum kaçırılan satış. Tedarik zinciriniz verimli çalıştı.',
+    finModerateDetail:'Gecikmeli tepkiler envanter uyumsuzluğuna neden oldu. Fazla stok maliyetlerinde (depolama, değer kaybı, fire) <strong>{over}₺</strong>, stok dışı kalmadan kaynaklanan gelir kaybında (kaçırılan satışlar, müşteri kaybı) <strong>{under}₺</strong> kaybettiniz.',
+    finBankruptDetail:'Felaket salınım marjlarınızı yok etti. <strong>{over}₺</strong> fazla envantere harcandı ve silinmek zorunda kaldı, <strong>{under}₺</strong> gelir boş raflar yüzünden buharlaştı. Toplam kayıplar sermaye rezervlerini aştı. <strong>Şirketiniz iflas etti.</strong> Geri dönün, bilgi gecikmenizi azaltın, tahmin ufkunuzu genişletin ve edindiğiniz bilgelikle tekrar deneyin.',
+    advHead:'Bir Sonraki Turunuz İçin Öneriler',
+    advDelay:'<strong>Bilgi Gecikmesini Azaltın:</strong> Gerçek zamanlı POS veri paylaşımı, IoT envanter sensörleri ve entegre ERP sistemleri uygulayın. Oyunda: Gecikmeyi 0–2 yapın.',
+    advHeadlight:'<strong>Tahmin Ufkunu Genişletin:</strong> Talep planlaması, makine öğrenimi tahmini ve ticari ortaklarla işbirlikçi planlama (CPFR) yatırımı yapın. Oyunda: Far\'ı 80–100 yapın.',
+    advSpeed:'<strong>Piyasalar dalgalı olduğunda:</strong> daha kısa ve sık sipariş döngüleri büyük toplu siparişlerden daha iyi performans gösterir. Çalkantılı talepte çeviklik verimliliği yener.',
+    advGeneral:'<strong>Temel ders:</strong> Kamçı Etkisi talep değişkenliğinden kaynaklanmaz — değişkenliğin <em>gecikmeli görünürlüğünden</em> kaynaklanır. Gecikmeyi ortadan kaldırın, kamçıyı ortadan kaldırın.',
+    tapResume:'Devam etmek için dokunun',
+    wTitle:'Direksiyon Gecikmesi Simülatörü',wVer:'v0.8.5 — Kamçı Etkisi Demosu',
+    wDevM:'Mobil — kaydırıcı veya ◀ ▶ düğmelerini kullanın',
+    wDevD:'Masaüstü — kaydırıcı, düğme veya ← → / A D tuşları',
+    wHint:'<strong>?</strong> düğmesine (sağ üst) basarak bu kılavuzu açabilirsiniz.',
+    ws1:'<strong>Direksiyon</strong> için kaydırıcıyı, ◀ ▶ düğmelerini veya ok tuşlarını kullanın. Kaydırıcı yerinde kalır.',
+    ws2:'<strong>Gecikme = 0</strong> ile başlayın. %\'nizi not edin. Gecikme 8, sonra 15 ile tekrarlayın.',
+    ws3:'Kaydırıcının üzerindeki <strong>turuncu ▼</strong> tekerleğin gerçekte nereye baktığını gösterir — Kamçı Etkisi budur.',
+    ws4:'<strong>Karanlık bölge</strong> sisdir — bilinmeyen gelecek talebi. Far mesafesi tahmin ufkunu ayarlar.',
+    wcL1:'Gecikme',wcV1:'Bilgi gecikmesi (0=anında, 15=kaos)',
+    wcL2:'Hız',wcV2:'Yolun hareket hızı',
+    wcL3:'Süre',wcV3:'Tur süresi (saniye)',
+    wcL4:'Far',wcV4:'Görüş mesafesi',
+    wDismiss:'Haydi Sürüşe ▶',
+    canvasReady:'▶ Başlat',
+    canvasSub:'Aşağıdaki ayarları yapıp başlayın',
+    canvasHint:'Ayarları değiştirmek için aşağıya kaydırın',
+    ttDelay:'Bilgi gecikmesini temsil eder. Yüksek gecikme, direksiyon girişinizin tekerleklere geç ulaşmasına ve Kamçı Etkisine neden olur.',
+    ttSpeed:'Yolun kayma hızı. Müşteri talebinin hızını veya genel piyasa dalgalanmasını temsil eder.',
+    ttDur:'Bir simülasyon turunun toplam süresi. Uzun turlar odaklanmayı ve kontrolü zorlaştırır.',
+    ttHL:'Sisten önce ne kadar ileriyi görebildiğiniz. Tahmin ufkunuzu veya tedarik zinciri görünürlüğünü temsil eder.'
+  }
+};
+
+var lang = 'en';
+function t(k){ return S[lang][k] || S.en[k] || k; }
+
+// ═══════════════════════════════════════════════════════════════
+// DOM REFS
+// ═══════════════════════════════════════════════════════════════
+function $id(id){ return document.getElementById(id); }
+
+var canvas      = $id('gc');
+var ctx         = canvas.getContext('2d');
+var CW          = 1200;
+var CH          = 400;
+canvas.width    = CW;
+
+var steerSlider = $id('steerSlider');
+var actTri      = $id('actTri');
+var sDelay      = $id('sDelay');
+var sSpeed      = $id('sSpeed');
+var sDur        = $id('sDur');
+var sFog        = $id('sFog');
+var sndCb       = $id('sndCb');
+var btnRs       = $id('btnRs');
+var sTime       = $id('sTime');
+var sRoad       = $id('sRoad');
+var sViol       = $id('sViol');
+var sStat       = $id('sStat');
+var pFill       = $id('pFill');
+var bL          = $id('bL');
+var bR          = $id('bR');
+var fogOverlay  = $id('fogOverlay');
+var mo          = $id('mo');
+var wmo         = $id('wmo');
+
+// ═══════════════════════════════════════════════════════════════
+// THEME
+// ═══════════════════════════════════════════════════════════════
+var isDark = true;
+function toggleTheme(){
+  isDark = !isDark;
+  document.body.classList.toggle('dark', isDark);
+  var icon = isDark ? '☀' : '☾';
+  $id('themeBtn').textContent = icon;
+  $id('wThemeBtn').textContent = icon;
+  $id('chThemeBtn').textContent = icon;
+  updateFogOverlay();
+  if(!G.running) drawStatic();
+  try{ localStorage.setItem('bw_theme', isDark ? 'dark' : 'light'); }catch(e){}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// LANGUAGE — sets both main header toggles AND welcome toggles
+// ═══════════════════════════════════════════════════════════════
+function setLang(l){
+  lang = l;
+  // sync both sets of lang buttons
+  ['btnEN','btnTR','wBtnEN','wBtnTR','chBtnEN','chBtnTR'].forEach(function(id){
+    var el = $id(id);
+    if(el) el.classList.toggle('active', (id.indexOf(l==='en'?'EN':'TR')!==-1));
+  });
+  applyText();
+  try{ localStorage.setItem('bw_lang', l); }catch(e){}
+}
+
+function applyText(){
+  $id('hSub').textContent   = t('hSub');
+  $id('lTime').textContent  = t('lTime');
+  $id('lRoad').textContent  = t('lRoad');
+  $id('lViol').textContent  = t('lViol');
+  $id('lStatus').textContent= t('lStatus');
+  $id('lDelay').textContent = t('lDelay');
+  $id('lSpeed').textContent = t('lSpeed');
+  $id('lDur').textContent   = t('lDur');
+  $id('lHL').textContent    = t('lHL');
+  $id('lSound').textContent = t('lSound');
+  $id('lDlo').textContent   = t('lDlo');
+  $id('lDhi').textContent   = t('lDhi');
+  btnRs.textContent         = t('btnRs');
+  $id('mCh').textContent    = t('mCh');
+  if(!G.running) sStat.textContent = t('stReady');
+  $id('mTitle').textContent = t('mTitle');
+  $id('mLOn').textContent   = t('mLOn');
+  $id('mLOff').textContent  = t('mLOff');
+  $id('mLVio').textContent  = t('mLVio');
+  $id('mLDel').textContent  = t('mLDel');
+  $id('eTitle').textContent = t('eTitle');
+  $id('eP1').innerHTML      = t('eP1');
+  $id('eP2').innerHTML      = t('eP2');
+  $id('eGG').textContent    = t('eGG');  $id('eGGt').textContent = t('eGGt');
+  $id('eGS').textContent    = t('eGS');  $id('eGSt').textContent = t('eGSt');
+  $id('eFG').textContent    = t('eFG');  $id('eFGt').textContent = t('eFGt');
+  $id('eFR').textContent    = t('eFR');  $id('eFRt').textContent = t('eFRt');
+  $id('eHist').textContent  = t('eHist');
+  applyWelcomeText();
+  // redraw static so canvas play button text updates
+  if(!G.running) drawStatic();
+  // update chart texts if open
+  if(chartMo && chartMo.classList.contains('vis')) showChart();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CANVAS SIZING
+// ═══════════════════════════════════════════════════════════════
+var canvasExpanded = false;
+var isMobile = ('ontouchstart' in window) || (window.innerWidth < 768);
+
+function resizeCanvas(expand){
+  if(expand) canvasExpanded = true;
+  var vh = window.innerHeight;
+  var vw = window.innerWidth;
+  var targetPx;
+  if(!canvasExpanded){
+    targetPx = isMobile ? 160 : 200;
+  } else if(isMobile){
+    targetPx = Math.round(Math.max(280, Math.min(vh*0.72, 520)));
+  } else {
+    targetPx = Math.round(Math.max(340, Math.min(vh*0.60, 600)));
+  }
+  // FIX: If canvas.offsetWidth is 0 (because it is hidden behind a display:none or a fully overlaying flexbox), fallback to `vw - 20` (accounting for app padding).
+  var containerW = canvas.offsetWidth;
+  if(containerW === 0) containerW = Math.min(1200, vw - 20); 
+  CH = Math.round(targetPx * (CW / Math.max(1, containerW)));
+  CH = Math.max(250, CH);
+  canvas.height = CH;
+  updateFogOverlay();
+  if(!G.running) drawStatic();
+}
+window.addEventListener('resize', function(){ isMobile = window.innerWidth<768; resizeCanvas(false); });
+
+// ═══════════════════════════════════════════════════════════════
+// FOG OVERLAY
+// ═══════════════════════════════════════════════════════════════
+function updateFogOverlay(){
+  var m    = parseInt(sFog.value);
+  var frac = 1-(m-20)/80;
+  var fogH = Math.round(frac*CH*0.82);
+  fogOverlay.style.height = (fogH/CH*100).toFixed(2)+'%';
+}
+sFog.addEventListener('input', function(){ $id('dFog').textContent=sFog.value+'m'; updateFogOverlay(); });
+
+// ═══════════════════════════════════════════════════════════════
+// AUDIO
+// ═══════════════════════════════════════════════════════════════
+var audio={
+  ctx:null,warnOsc:null,warnGain:null,warnLfo:null,warnOn:false,engOsc:null, engGain:null, engOn:false,
+  init:function(){ if(this.ctx) return; try{ this.ctx=new(window.AudioContext||window.webkitAudioContext)(); }catch(e){} },
+  beep:function(){
+    if(!sndCb.checked||!this.ctx) return;
+    try{ var o=this.ctx.createOscillator(),g=this.ctx.createGain(); o.type='sawtooth'; o.frequency.value=800; g.gain.value=0.15; g.gain.exponentialRampToValueAtTime(0.001,this.ctx.currentTime+0.2); o.connect(g); g.connect(this.ctx.destination); o.start(); o.stop(this.ctx.currentTime+0.2); }catch(e){}
+  },
+  startWarn:function(){
+    if(this.warnOn||!sndCb.checked||!this.ctx) return;
+    try{ this.warnOsc=this.ctx.createOscillator(); this.warnGain=this.ctx.createGain(); this.warnLfo=this.ctx.createOscillator(); var lG=this.ctx.createGain(); this.warnOsc.type='square'; this.warnOsc.frequency.value=220; this.warnGain.gain.value=0.06; this.warnLfo.frequency.value=8; lG.gain.value=0.06; this.warnLfo.connect(lG); lG.connect(this.warnGain.gain); this.warnLfo.start(); this.warnOsc.connect(this.warnGain); this.warnGain.connect(this.ctx.destination); this.warnOsc.start(); this.warnOn=true; }catch(e){}
+  },
+  stopWarn:function(){
+    if(!this.warnOn) return;
+    try{ this.warnLfo.stop(); this.warnOsc.stop(); }catch(e){}
+    this.warnOn=false; this.warnOsc=null; this.warnGain=null; this.warnLfo=null;
+  },
+  // Tick-based engine: repeating click sounds — faster speed = higher tick rate = F1-like
+  tickSpeed:1, tickRunning:false, tickTimer:null,
+  startEngine:function(){
+    if(this.tickRunning||!sndCb.checked||!this.ctx) return;
+    this.tickRunning=true; this._doTick();
+  },
+  _doTick:function(){
+    if(!this.tickRunning) return;
+    var self=this;
+    if(sndCb.checked && self.ctx){
+      try{
+        var o=self.ctx.createOscillator(), g=self.ctx.createGain();
+        o.type='triangle'; o.frequency.value=160+self.tickSpeed*12;
+        g.gain.setValueAtTime(0.10,self.ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001,self.ctx.currentTime+0.022);
+        o.connect(g); g.connect(self.ctx.destination);
+        o.start(); o.stop(self.ctx.currentTime+0.022);
+      }catch(e){}
+    }
+    // speed 1 → ~340ms interval, speed 8 → ~18ms (F1)
+    var ms=Math.round(340/Math.pow(self.tickSpeed,1.75));
+    ms=Math.max(15,Math.min(340,ms));
+    self.tickTimer=setTimeout(function(){ self._doTick(); },ms);
+  },
+  updateEngine:function(speed){ this.tickSpeed=Math.max(1,speed); },
+  stopEngine:function(){
+    this.tickRunning=false;
+    if(this.tickTimer){ clearTimeout(this.tickTimer); this.tickTimer=null; }
+  },
+  screech:function(){
+    if(!sndCb.checked||!this.ctx) return;
+    try{ var o=this.ctx.createOscillator(),g=this.ctx.createGain(); o.type='triangle'; o.frequency.value=1200; o.frequency.exponentialRampToValueAtTime(600,this.ctx.currentTime+0.2); g.gain.value=0.1; g.gain.exponentialRampToValueAtTime(0.001,this.ctx.currentTime+0.2); o.connect(g); g.connect(this.ctx.destination); o.start(); o.stop(this.ctx.currentTime+0.2); }catch(e){}
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════
+// SEEDED PRNG
+// ═══════════════════════════════════════════════════════════════
+var ROAD_SEED=42;
+function mulberry32(seed){
+  return function(){ seed|=0; seed=seed+0x6D2B79F5|0; var t=Math.imul(seed^seed>>>15,1|seed); t=t+Math.imul(t^t>>>7,61|t)^t; return((t^t>>>14)>>>0)/4294967296; };
+}
+var rng=mulberry32(ROAD_SEED);
+
+// ═══════════════════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════════════════
+var SEG=6, RBW=240, RMN=150, RMX=340, TSEGS=16000;
+var BTN_STEP=5, SP=4.5, CAR_Y_FRAC=0.88, CW2=28, CH2=46;
+var COL_GRASS='#2d6a1e', COL_GRASS2='#2a6019';
+var COL_ROAD='#3a3a46',  COL_ROAD2='#3d3d4a';
+var COL_LANE='#555566',  COL_EDGE='#f59e0b', COL_SHOULDER='#4a4020';
+
+// ═══════════════════════════════════════════════════════════════
+// GAME STATE
+// ═══════════════════════════════════════════════════════════════
+var G={
+  running:false, paused:false, gameTime:0, gameDur:30, baseSpeed:3, delay:0,
+  carX:0, scrollY:0, sliderPos:0, smoothedInput:0, inputSteer:0,
+  viscousSteer:0, steerVelocity:0, actualSteer:0, steerQueue:[], sliderActive:false,
+  totalFrames:0, onFrames:0, violations:0, wasOff:false, isOff:false, carOff:false,
+  pathTrace:[], skidMarks:[], lastTS:0,
+  road:[], hazards:[], results:[]
+};
+
+// ═══════════════════════════════════════════════════════════════
+// ROAD GENERATION
+// ═══════════════════════════════════════════════════════════════
+function genRoad(){
+  rng=mulberry32(ROAD_SEED); G.road=[]; G.hazards=[];
+
+  // Layered sine waves — smooth curves that stay in bounds
+  // Max theoretical sum: 220+120+55+22+8 = 425px
+  // With car at max drift (~80px), road edge at ~505px from center
+  // Canvas half = 600px, road half-width min=75, shoulder=18 → need 507px max → safe
+  var layers=[
+    {freq:1/1100, amp:220, ph:rng()*Math.PI*2},
+    {freq:1/500,  amp:120, ph:rng()*Math.PI*2},
+    {freq:1/250,  amp:55,  ph:rng()*Math.PI*2},
+    {freq:1/130,  amp:22,  ph:rng()*Math.PI*2},
+    {freq:1/70,   amp:8,   ph:rng()*Math.PI*2}
+  ];
+  // Width variation
+  var wLayers=[
+    {freq:1/900,  amp:50, ph:rng()*Math.PI*2},
+    {freq:1/350,  amp:30, ph:rng()*Math.PI*2},
+    {freq:1/150,  amp:15, ph:rng()*Math.PI*2}
+  ];
+
+  var SHOULDER=18, MARGIN=10;
+
+  for(var i=0;i<TSEGS;i++){
+    // Ramp: first 80 segs straight, then smoothstep to full over 500 segs
+    var ramp;
+    if(i<80) ramp=0;
+    else ramp=Math.min(1,(i-80)/500);
+    ramp=ramp*ramp*(3-2*ramp);
+
+    var off=0;
+    for(var li=0;li<layers.length;li++){
+      var L=layers[li];
+      off+=Math.sin(i*L.freq*Math.PI*2+L.ph)*L.amp*ramp;
+    }
+
+    var w=RBW;
+    for(var wi=0;wi<wLayers.length;wi++){
+      var W=wLayers[wi];
+      w+=Math.sin(i*W.freq*Math.PI*2+W.ph)*W.amp*ramp;
+    }
+    w=Math.max(RMN,Math.min(RMX,w));
+
+    // Hard clamp: road edges must stay inside canvas even if car drifts
+    // Allow extra 100px margin for car drift from road center
+    var maxOff=CW/2 - w/2 - SHOULDER - MARGIN - 100;
+    if(maxOff<0) maxOff=0;
+    off=Math.max(-maxOff,Math.min(maxOff,off));
+
+    G.road.push({ox:off,w:w});
+    if(i>200&&rng()<0.0013) G.hazards.push({si:i,ox:off+(rng()-0.5)*w*0.4,tp:rng()<0.5?'c':'t'});
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GAME CONTROL
+// ═══════════════════════════════════════════════════════════════
+function startGame(){
+  if(G.running) return; audio.init();
+  mo.classList.remove('vis');
+  if(typeof chartMo !== 'undefined') chartMo.classList.remove('vis');
+  wmo.classList.remove('vis');
+  G.delay=parseInt(sDelay.value); G.baseSpeed=parseInt(sSpeed.value); G.gameDur=parseInt(sDur.value);
+  G.running=true; G.paused=false; G.gameTime=0; G.carX=0; G.scrollY=0; G.sliderPos=0;
+  G.smoothedInput=0; G.inputSteer=0; G.viscousSteer=0; G.steerVelocity=0; G.actualSteer=0;
+  G.steerQueue=[]; G.sliderActive=false; G.totalFrames=0; G.onFrames=0; G.violations=0;
+  G.wasOff=false; G.isOff=false; G.carOff=false; G.pathTrace=[]; G.skidMarks=[]; G.lastTS=0;
+  steerSlider.value=0; sStat.textContent=t('stDriving');
+  sDelay.disabled=true; sSpeed.disabled=true; sDur.disabled=true; sFog.disabled=true;
+  for(var i=0;i<G.delay;i++) G.steerQueue.push(0);
+  genRoad(); audio.startEngine(); audio.updateEngine(G.baseSpeed); requestAnimationFrame(loop);
+}
+
+function resetGame(){
+  G.running=false; G.paused=false; audio.stopWarn(); audio.stopEngine();
+  G.gameTime=0; G.carX=0; G.scrollY=0; G.sliderPos=0;
+  G.smoothedInput=0; G.inputSteer=0; G.viscousSteer=0; G.steerVelocity=0;
+  G.actualSteer=0; G.steerQueue=[]; G.totalFrames=0; G.onFrames=0; G.violations=0;
+  G.wasOff=false; G.isOff=false; G.carOff=false; G.pathTrace=[]; G.skidMarks=[];
+  sDelay.disabled=false; sSpeed.disabled=false; sDur.disabled=false; sFog.disabled=false;
+  sStat.textContent=t('stReady'); sTime.textContent='0.0s';
+  sRoad.textContent='100%'; sRoad.className='stat-v good';
+  sViol.textContent='0'; pFill.style.width='0%';
+  steerSlider.value=0; actTri.style.left='50%';
+  drawStatic();
+}
+
+function endGame(){
+  G.running=false; audio.stopWarn(); audio.stopEngine();
+  var pct=G.totalFrames>0?(G.onFrames/G.totalFrames*100):100;
+  G.results.push({dly:G.delay,spd:G.baseSpeed,dur:G.gameDur,fog:parseInt(sFog.value),on:pct,vio:G.violations});
+  $id('mOn').textContent=pct.toFixed(1)+'%'; $id('mOff').textContent=(100-pct).toFixed(1)+'%';
+  $id('mVio').textContent=G.violations; $id('mDel').textContent=G.delay;
+  var mk=pct>=98?'msg98':pct>=90?'msg90':pct>=70?'msg70':'msg0';
+  $id('mMsg').textContent=t(mk); mo.classList.add('vis');
+  sStat.textContent=t('stDone');
+  sDelay.disabled=false; sSpeed.disabled=false; sDur.disabled=false; sFog.disabled=false;
+  drawStatic(); updHist();
+}
+
+function updHist(){
+  if(!G.results.length) return;
+  $id('rSec').classList.add('vis');
+  var hdr=t('histHdr');
+  var h='<table style="width:100%;font-size:12px;border-collapse:collapse">';
+  h+='<tr style="color:var(--text3);text-align:left">'+hdr.map(function(s){return'<th style="padding:3px 5px">'+s+'</th>';}).join('')+'</tr>';
+  G.results.forEach(function(r,i){
+    var c=r.on>=90?'#22c55e':r.on>=70?'#f97316':'#ef4444';
+    var fI = r.on>=92?t('finProfitIcon') : r.on>=60?t('finLossIcon') : t('finBankruptIcon');
+    var fT = r.on>=92?t('fateProfit') : r.on>=60?t('fateLoss') : t('fateBankrupt');
+    var fC = r.on>=92?'#22c55e' : r.on>=60?'#f97316' : '#ef4444';
+    h+='<tr style="color:var(--text2)"><td style="padding:2px 5px">'+(i+1)+'</td><td style="padding:2px 5px">'+r.dly+'</td><td style="padding:2px 5px">'+r.spd+'</td><td style="padding:2px 5px">'+r.dur+'s</td><td style="padding:2px 5px;color:#a855f7">'+r.fog+'m</td><td style="padding:2px 5px;color:'+c+';font-weight:600">'+r.on.toFixed(1)+'%</td><td style="padding:2px 5px">'+r.vio+'</td><td style="padding:2px 5px;color:'+fC+';font-weight:600;white-space:nowrap">'+fI+' '+fT+'</td></tr>';
+  });
+  h+='</table>';
+  var lo=G.results.filter(function(r){return r.dly<=2;}), hi=G.results.filter(function(r){return r.dly>=6;});
+  if(lo.length&&hi.length){
+    var aL=lo.reduce(function(a,b){return a+b.on;},0)/lo.length;
+    var aH=hi.reduce(function(a,b){return a+b.on;},0)/hi.length;
+    if(aL>aH+5) h+='<p style="margin-top:8px;color:#f97316;font-size:12px"><strong>'+t('histPat').replace('{lo}',aL.toFixed(0)).replace('{hi}',aH.toFixed(0))+'</strong></p>';
+  }
+  $id('rTxt').innerHTML=h;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GAME LOOP
+// ═══════════════════════════════════════════════════════════════
+function loop(ts){
+  if(!G.running) return;
+  if(G.paused){
+    audio.stopEngine(); audio.stopWarn();
+    draw();
+    drawPausedOverlay();
+    requestAnimationFrame(loop);
+    return;
+  }
+  if(!G.lastTS) G.lastTS=ts;
+  var dt=Math.min(ts-G.lastTS,33); G.lastTS=ts;
+  G.gameTime+=dt/1000;
+  if(G.gameTime>=G.gameDur){ G.gameTime=G.gameDur; sTime.textContent=G.gameTime.toFixed(1)+'s'; pFill.style.width='100%'; draw(); endGame(); return; }
+  sTime.textContent=G.gameTime.toFixed(1)+'s';
+  pFill.style.width=(G.gameTime/G.gameDur*100).toFixed(1)+'%';
+
+  if(keys['ArrowLeft']||keys['a']||keys['A']) G.sliderPos=Math.max(-100,G.sliderPos-1);
+  if(keys['ArrowRight']||keys['d']||keys['D']) G.sliderPos=Math.min(100,G.sliderPos+1);
+
+  var rawInput;
+  if(G.sliderActive){ rawInput=(parseInt(steerSlider.value)/100)*SP; G.sliderPos=parseInt(steerSlider.value); G.smoothedInput=rawInput; }
+  else { var st=(G.sliderPos/100)*SP; G.smoothedInput+=(st-G.smoothedInput)*0.20; rawInput=G.smoothedInput; steerSlider.value=G.sliderPos; }
+  G.inputSteer=rawInput;
+
+  // ═══════════════════════════════════════════════════════════════
+  // PHYSICS: Steering momentum + damping
+  // ═══════════════════════════════════════════════════════════════
+  // df: delay factor (0 to 2) — normalized against max delay of 30 frames
+  var df=G.delay/30;
+  
+  // fs: force sensitivity — how responsive wheels are to input
+  //   at delay=0: full response (0.55)
+  //   at delay=30: minimal response (0.04), wheels ignore input
+  // Higher delay = lower force sensitivity = wheels resist steering changes
+  var fs=G.delay===0?0.55:Math.max(0.02,0.55-df*0.53);
+  
+  // dm: damping/friction multiplier — how much wheel velocity is lost per frame
+  //   at delay=0: high friction (0.72), wheels stop quickly
+  //   at delay=30: almost no friction (0.02), wheels keep spinning indefinitely
+  // Lower damping = more momentum = wheel overshoots longer = exaggerated delay effect
+  var dm=G.delay===0?0.72:Math.max(0.02,0.72-df*0.70);
+  
+  // steerVelocity: angular acceleration of the wheels (how fast they turn)
+  // Formula: vel = vel * damping + (targetPos - currentPos) * forceSensitivity
+  // This creates inertia: wheels have "mass" and don't respond instantly
+  G.steerVelocity=G.steerVelocity*dm+(G.inputSteer-G.viscousSteer)*fs;
+  
+  // Clamp velocity to physical limits (max turn speed)
+  G.steerVelocity=Math.max(-6,Math.min(6,G.steerVelocity));
+  
+  // viscousSteer: actual wheel position (accumulates velocity over time)
+  // Integrated with dt smoothing so physics feel consistent at 60fps
+  G.viscousSteer+=G.steerVelocity*(dt/16);
+  
+  // Clamp position to valid steering range (SP = 4.5, limits ±1.8x that)
+  G.viscousSteer=Math.max(-SP*1.8,Math.min(SP*1.8,G.viscousSteer));
+
+  while(G.steerQueue.length<G.delay) G.steerQueue.unshift(0);
+  G.steerQueue.push(G.viscousSteer);
+  G.actualSteer=(G.steerQueue.length>G.delay)?G.steerQueue.shift():G.viscousSteer;
+
+  G.carX+=G.actualSteer*(dt/16); G.scrollY+=G.baseSpeed*(dt/16);
+
+  var sfb=Math.round((1-CAR_Y_FRAC)*CH/SEG);
+  var carWorldSeg=Math.floor(G.scrollY/SEG)+sfb;
+  var carScreenRow=sfb;
+
+  G.isOff=false;
+  if(carWorldSeg>=0&&carWorldSeg<G.road.length){
+    var seg=G.road[carWorldSeg];
+    if(Math.abs(G.carX-seg.ox)+CW2/2>seg.w/2) G.isOff=true;
+  }
+  if(!G.isOff){
+    for(var hi=0;hi<G.hazards.length;hi++){
+      var haz=G.hazards[hi];
+      var hsr=haz.si-Math.floor(G.scrollY/SEG);
+      if(Math.abs(hsr-carScreenRow)<=2){
+        var hsx=CW/2+haz.ox-G.carX;
+        if(Math.abs(hsx-CW/2)<CW2/2+14){ G.isOff=true; break; }
+      }
+    }
+  }
+  G.carOff=G.isOff;
+  G.totalFrames++;
+
+  if(!G.paused) {
+    audio.startEngine(); // start/resume engine if unpaused
+    audio.updateEngine(G.baseSpeed);
+  }
+
+  if(G.isOff){
+    if(!G.wasOff){ G.violations++; audio.screech(); audio.startWarn(); haptic(60); }
+    G.wasOff=true;
+    G.skidMarks.push({worldSeg:carWorldSeg,x:G.carX,alpha:1.0});
+    if(G.skidMarks.length>200) G.skidMarks.shift();
+  } else {
+    if(G.wasOff) audio.stopWarn();
+    G.onFrames++; G.wasOff=false;
+  }
+  G.pathTrace.push({worldSeg:carWorldSeg,x:G.carX,isOff:G.isOff});
+
+  var pct=G.totalFrames>0?(G.onFrames/G.totalFrames*100):100;
+  sRoad.textContent=pct.toFixed(0)+'%';
+  sRoad.className='stat-v '+(pct>=90?'good':pct>=70?'warn':'bad');
+  sViol.textContent=G.violations;
+  actTri.style.left=(50+(G.actualSteer/SP)*45)+'%';
+  draw();
+  requestAnimationFrame(loop);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DRAW
+// ═══════════════════════════════════════════════════════════════
+function draw(){
+  ctx.fillStyle=COL_GRASS; ctx.fillRect(0,0,CW,CH);
+  var sfb=Math.round((1-CAR_Y_FRAC)*CH/SEG);
+  var startSeg=Math.floor(G.scrollY/SEG), offS=G.scrollY%SEG;
+  var totalSegs=Math.ceil(CH/SEG)+2;
+  var carScreenRow=Math.floor(CH/SEG)-sfb;
+
+  // Road
+  for(var i=0;i<totalSegs;i++){
+    var wSeg=startSeg+i;
+    if(wSeg<0||wSeg>=G.road.length) continue;
+    var seg=G.road[wSeg], dy=CH-(i*SEG-offS)-SEG;
+    var roadCX=CW/2+seg.ox-G.carX, hw=seg.w/2, l=roadCX-hw, r=roadCX+hw;
+    ctx.fillStyle=(wSeg%3===0)?COL_GRASS:COL_GRASS2; ctx.fillRect(0,dy,CW,SEG+1);
+    ctx.fillStyle=COL_SHOULDER; ctx.fillRect(l-18,dy,18,SEG+1); ctx.fillRect(r,dy,18,SEG+1);
+    ctx.fillStyle=(wSeg%2===0)?COL_ROAD:COL_ROAD2; ctx.fillRect(l,dy,seg.w,SEG+1);
+    ctx.fillStyle=COL_EDGE; ctx.fillRect(l,dy,3,SEG+1); ctx.fillRect(r-3,dy,3,SEG+1);
+    if(wSeg%10<5){ ctx.fillStyle=COL_LANE; ctx.fillRect(roadCX-1,dy,2,SEG+1); }
+  }
+
+  // Path trace
+  for(var pi=G.pathTrace.length-1; pi>=0; pi--){
+    var pt=G.pathTrace[pi], relI=pt.worldSeg-startSeg;
+    if(relI > totalSegs+2) continue;
+    if(relI < -2) break;
+    var ptDy=CH-(relI*SEG-offS)-SEG, ptX=CW/2+(pt.x-G.carX);
+    ctx.globalAlpha=0.55; ctx.fillStyle=pt.isOff?'#ef4444':'#22c55e'; ctx.fillRect(ptX-2,ptDy,4,SEG+1); ctx.globalAlpha=1;
+  }
+
+  // Skid marks
+  for(var si=G.skidMarks.length-1; si>=0; si--){
+    var sk=G.skidMarks[si], relI=sk.worldSeg-startSeg;
+    if(relI > totalSegs+2) continue;
+    if(relI < -2) break;
+    var skDy=CH-(relI*SEG-offS)-SEG, skX=CW/2+(sk.x-G.carX), a=Math.max(0,sk.alpha);
+    if(a<=0) continue;
+    ctx.save(); ctx.globalAlpha=a*0.7; ctx.fillStyle='#ef4444'; ctx.fillRect(skX-2,skDy,4,SEG+1); ctx.restore();
+    if(!G.paused) sk.alpha-=0.005;
+  }
+
+  // Hazards
+  for(var hi2=0;hi2<G.hazards.length;hi2++){
+    var haz=G.hazards[hi2], relI=haz.si-startSeg;
+    if(relI<-4||relI>totalSegs+4) continue;
+    var hDy=CH-(relI*SEG-offS)-SEG, hX=CW/2+haz.ox-G.carX;
+    var hit=Math.abs(relI-carScreenRow)<=2&&Math.abs(hX-CW/2)<CW2/2+14;
+    if(haz.tp==='c'){
+      ctx.fillStyle=hit?'#ef4444':'#555'; rr(ctx,hX-12,hDy-24,24,40,5); ctx.fill();
+      ctx.fillStyle=hit?'#7f1d1d':'#2a2a35'; rr(ctx,hX-8,hDy-18,16,12,3); ctx.fill();
+      ctx.fillStyle='#fbbf24'; ctx.fillRect(hX-10,hDy-24,5,3); ctx.fillRect(hX+5,hDy-24,5,3);
+      ctx.fillStyle='#ef4444'; ctx.fillRect(hX-10,hDy+14,4,4); ctx.fillRect(hX+6,hDy+14,4,4);
+    } else {
+      ctx.fillStyle=hit?'#92400e':'#3d2517'; ctx.fillRect(hX-4,hDy-8,8,22);
+      ctx.fillStyle=hit?'#ef4444':'#1a4a1a'; ctx.beginPath(); ctx.arc(hX,hDy-18,16,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle=hit?'#dc2626':'#145214'; ctx.beginPath(); ctx.arc(hX-4,hDy-22,10,0,Math.PI*2); ctx.fill();
+    }
+  }
+
+  // Car
+  var carSY=CAR_Y_FRAC*CH, cdx=CW/2-CW2/2, cdy=carSY-CH2/2;
+  ctx.fillStyle='rgba(0,0,0,0.30)'; ctx.beginPath(); ctx.ellipse(CW/2+2,cdy+CH2+3,CW2/2+3,5,0,0,Math.PI*2); ctx.fill();
+  var fogPct=parseFloat(fogOverlay.style.height)||0, fogPx=fogPct/100*CH;
+  if(fogPx>0&&fogPx<cdy){
+    var beam=ctx.createLinearGradient(CW/2,cdy,CW/2,fogPx);
+    beam.addColorStop(0,'rgba(255,240,180,0.08)'); beam.addColorStop(1,'rgba(255,240,180,0)');
+    ctx.fillStyle=beam; ctx.beginPath(); ctx.moveTo(CW/2-14,cdy); ctx.lineTo(CW/2-90,fogPx); ctx.lineTo(CW/2+90,fogPx); ctx.lineTo(CW/2+14,cdy); ctx.closePath(); ctx.fill();
+  }
+  var bc=G.carOff?(Math.floor(Date.now()/120)%2===0?'#ef4444':'#b91c1c'):'#3b82f6';
+  ctx.fillStyle=bc; rr(ctx,cdx,cdy,CW2,CH2,5); ctx.fill();
+  ctx.fillStyle=G.carOff?'#5a1a1a':'#1e3a5f'; rr(ctx,cdx+4,cdy+5,CW2-8,12,3); ctx.fill(); rr(ctx,cdx+4,cdy+CH2-13,CW2-8,7,2); ctx.fill();
+  ctx.fillStyle='#fbbf24'; ctx.fillRect(cdx+2,cdy,4,3); ctx.fillRect(cdx+CW2-6,cdy,4,3);
+  ctx.fillStyle='#ef4444'; ctx.fillRect(cdx+2,cdy+CH2-3,4,3); ctx.fillRect(cdx+CW2-6,cdy+CH2-3,4,3);
+
+  if(G.running){
+    var hud=t('hudTxt').replace('{d}',G.delay).replace('{s}',G.baseSpeed).replace('{dur}',G.gameDur);
+    ctx.font='500 11px monospace'; ctx.textAlign='right'; ctx.fillStyle='rgba(249,115,22,0.4)'; ctx.fillText(hud,CW-12,18);
+  }
+  if(G.carOff&&G.running){ ctx.fillStyle='rgba(239,68,68,0.07)'; ctx.fillRect(0,0,CW,CH); }
+}
+
+/*
+function drawPathOscillationChart() {
+  // Draw an oscillation chart on the canvas showing lateral deviation
+  ctx.fillStyle = isDark ? 'rgba(14,27,14,0.95)' : 'rgba(240,245,240,0.95)';
+  ctx.fillRect(0, 0, CW, CH);
+  
+  var pad = 40;
+  var w = CW - pad*2;
+  var h = CH - pad*2;
+  
+  ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad, pad + h/2);
+  ctx.lineTo(pad + w, pad + h/2);
+  ctx.stroke();
+  
+  ctx.fillStyle = isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)';
+  ctx.font = '12px Outfit,sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(t('chartTitle') || 'Path Oscillation (Bullwhip Effect)', pad, pad - 10);
+  ctx.fillText('0s', pad, pad + h + 15);
+  ctx.textAlign = 'right';
+  ctx.fillText(G.gameDur + 's', pad + w, pad + h + 15);
+  
+  if(G.pathTrace.length < 2) return;
+  
+  // Plot road center
+  ctx.beginPath();
+  for(var i=0; i<G.pathTrace.length; i++){
+    var pt = G.pathTrace[i];
+    var px = pad + (i / (G.pathTrace.length-1)) * w;
+    var rx = 0;
+    if(pt.worldSeg >= 0 && pt.worldSeg < G.road.length) rx = G.road[pt.worldSeg].ox;
+    var py = pad + h/2 + (rx / (RBW * 1.5)) * (h/2);
+    if(i===0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.3)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Plot car path
+  ctx.beginPath();
+  for(var i=0; i<G.pathTrace.length; i++){
+    var pt = G.pathTrace[i];
+    var px = pad + (i / (G.pathTrace.length-1)) * w;
+    var py = pad + h/2 + (pt.x / (RBW * 1.5)) * (h/2);
+    if(i===0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.strokeStyle = '#f97316';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+}
+*/
+
+function drawPausedOverlay() {
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.fillRect(0,0,CW,CH);
+  ctx.font = '800 ' + Math.max(24, Math.round(CH*0.08)) + 'px Outfit,sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#fff';
+  ctx.fillText('PAUSED', CW/2, CH/2);
+  ctx.font = '500 ' + Math.max(14, Math.round(CH*0.04)) + 'px Outfit,sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.fillText(t('tapResume'), CW/2, CH/2 + Math.max(24, Math.round(CH*0.08)));
+}
+
+function rr(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.lineTo(x+w-r,y); c.quadraticCurveTo(x+w,y,x+w,y+r); c.lineTo(x+w,y+h-r); c.quadraticCurveTo(x+w,y+h,x+w-r,y+h); c.lineTo(x+r,y+h); c.quadraticCurveTo(x,y+h,x,y+h-r); c.lineTo(x,y+r); c.quadraticCurveTo(x,y,x+r,y); c.closePath(); }
+
+// ─── #6 PLAY BUTTON on canvas ───
+// State: 0=ready, 1=done. Drawn in drawStatic, hit-tested on canvas click.
+var PLAY_BTN = { cx:0, cy:0, r:0 }; // updated each drawStatic call
+
+function drawStatic(){
+    // Draw actual road data so the pre-game view matches what gameplay shows
+    if(!G.road || G.road.length===0) genRoad(); // ensure road exists
+    ctx.fillStyle=COL_GRASS; ctx.fillRect(0,0,CW,CH);
+    var totalSegs=Math.ceil(CH/SEG)+2;
+    for(var i=0;i<totalSegs;i++){
+      var wSeg=i;
+      if(wSeg<0||wSeg>=G.road.length) continue;
+      var seg=G.road[wSeg], dy=CH-i*SEG-SEG;
+      var roadCX=CW/2+seg.ox, hw=seg.w/2, l=roadCX-hw, r=roadCX+hw;
+      ctx.fillStyle=(wSeg%3===0)?COL_GRASS:COL_GRASS2; ctx.fillRect(0,dy,CW,SEG+1);
+      ctx.fillStyle=COL_SHOULDER; ctx.fillRect(l-18,dy,18,SEG+1); ctx.fillRect(r,dy,18,SEG+1);
+      ctx.fillStyle=(wSeg%2===0)?COL_ROAD:COL_ROAD2; ctx.fillRect(l,dy,seg.w,SEG+1);
+      ctx.fillStyle=COL_EDGE; ctx.fillRect(l,dy,3,SEG+1); ctx.fillRect(r-3,dy,3,SEG+1);
+      if(wSeg%10<5){ ctx.fillStyle=COL_LANE; ctx.fillRect(roadCX-1,dy,2,SEG+1); }
+    }
+
+    // Car
+    var cx=CW/2, cdy=CAR_Y_FRAC*CH-CH2/2, cdx=cx-CW2/2;
+    ctx.fillStyle='rgba(0,0,0,0.28)'; ctx.beginPath(); ctx.ellipse(cx+2,cdy+CH2+3,CW2/2+3,5,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#3b82f6'; rr(ctx,cdx,cdy,CW2,CH2,5); ctx.fill();
+    ctx.fillStyle='#1e3a5f'; rr(ctx,cdx+4,cdy+5,CW2-8,12,3); ctx.fill();
+
+  // ── Play button (drawn on canvas, no DOM element needed)
+  var btnR   = Math.round(Math.min(CW,CH)*0.085);  // radius scales with canvas
+  var btnCX  = CW/2;
+  var btnCY  = CH*0.42;
+  PLAY_BTN.cx=btnCX; PLAY_BTN.cy=btnCY; PLAY_BTN.r=btnR;
+
+  // outer glow
+  var glow=ctx.createRadialGradient(btnCX,btnCY,btnR*0.5,btnCX,btnCY,btnR*1.6);
+  glow.addColorStop(0,'rgba(249,115,22,0.22)'); glow.addColorStop(1,'rgba(249,115,22,0)');
+  ctx.fillStyle=glow; ctx.beginPath(); ctx.arc(btnCX,btnCY,btnR*1.6,0,Math.PI*2); ctx.fill();
+
+  // circle background
+  ctx.fillStyle='rgba(249,115,22,0.88)';
+  ctx.beginPath(); ctx.arc(btnCX,btnCY,btnR,0,Math.PI*2); ctx.fill();
+
+  // ring
+  ctx.strokeStyle='rgba(255,255,255,0.35)'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(btnCX,btnCY,btnR,0,Math.PI*2); ctx.stroke();
+
+  // triangle ▶
+  var ts=btnR*0.38;
+  ctx.fillStyle='#fff';
+  ctx.beginPath();
+  ctx.moveTo(btnCX-ts*0.6+ts*0.18, btnCY-ts);
+  ctx.lineTo(btnCX-ts*0.6+ts*0.18, btnCY+ts);
+  ctx.lineTo(btnCX+ts*0.9+ts*0.18, btnCY);
+  ctx.closePath(); ctx.fill();
+
+   // label below button — i18n text
+   var labelSize = Math.max(18, Math.round(CH*0.048));
+   var CX = CW/2;
+   var isFinished = (!G.running && G.gameTime >= G.gameDur && G.pathTrace.length > 0);
+   ctx.font = '700 '+labelSize+'px Outfit,sans-serif';
+   ctx.textAlign='center'; ctx.fillStyle='rgba(249,115,22,0.9)';
+   ctx.fillText(isFinished ? t('mRe') : t('canvasReady'), CX, btnCY+btnR+labelSize*1.4);
+
+  var subSize = Math.max(13, Math.round(CH*0.033));
+  ctx.font = '400 '+subSize+'px Outfit,sans-serif';
+  ctx.fillStyle=isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.5)';
+  if(!isFinished) ctx.fillText(t('canvasSub'), CW/2, btnCY+btnR+labelSize*1.4+subSize*1.5);
+}
+
+// ─── Canvas click / tap → hit test play button ───
+function canvasHitTest(e){
+  if(G.running){
+    G.paused = !G.paused;
+    if(G.paused) audio.stopWarn();
+    else G.lastTS = 0; // Prevent huge delta jump on resume
+    return;
+  }
+  // Click anywhere starts the game
+  audio.init(); startGame();
+}
+canvas.addEventListener('click', canvasHitTest);
+canvas.addEventListener('touchend', function(e){ e.preventDefault(); canvasHitTest(e); }, {passive:false});
+
+// ═══════════════════════════════════════════════════════════════
+// BULLWHIP CHART
+// ═══════════════════════════════════════════════════════════════
+var chartMo = $id('chartMo');
+var chartCanvas = $id('chartCanvas');
+var chartCtx = chartCanvas.getContext('2d');
+var chartScrollWrap = $id('chartScrollWrap');
+var chExportBtn = $id('chExportBtn');
+
+function paramLevel(val,lo,hi){
+  var pct=(val-lo)/(hi-lo);
+  if(pct<=0.25) return {key:'pLo',cls:'lo'};
+  if(pct<=0.55) return {key:'pMd',cls:'md'};
+  if(pct<=0.8) return {key:'pHi',cls:'hi'};
+  return {key:'pVHi',cls:'hi'};
+}
+
+function showChart(){
+  if(G.pathTrace.length<10) return;
+  mo.classList.remove('vis');
+  chartMo.classList.add('vis');
+
+  // i18n
+  $id('chTitle').textContent=t('chartTitle');
+  $id('chLegDemand').textContent=t('chartDemand');
+  $id('chLegAction').textContent=t('chartAction');
+  $id('chLegOver').textContent=t('chartOffroadOver');
+  $id('chLegUnder').textContent=t('chartOffroadUnder');
+  $id('chLeft').textContent=t('chartLeft');
+  $id('chCenter').textContent=t('chartCenter');
+  $id('chRight').textContent=t('chartRight');
+  $id('chTime').textContent=t('chartTime');
+  $id('chScrollHint').textContent=t('chartScroll');
+  $id('chCloseBottom').textContent=t('chartClose');
+
+  // Downsample
+  var raw=G.pathTrace;
+  var step=Math.max(1,Math.floor(raw.length/800));
+  var demandPts=[], actionPts=[], offRoad=[], offSide=[];
+  for(var i=0;i<raw.length;i+=step){
+    var pt=raw[i];
+    var seg=(pt.worldSeg>=0 && pt.worldSeg<G.road.length)?G.road[pt.worldSeg]:null;
+    var roadOx=seg?seg.ox:0;
+    demandPts.push(roadOx);
+    actionPts.push(pt.x);
+    offRoad.push(pt.isOff);
+    // Determine overstock vs understock:
+    // overstock = action > demand (right of center), understock = action < demand (left of center)
+    if(pt.isOff && seg){
+      offSide.push(pt.x > seg.ox ? 'over' : 'under');
+    } else {
+      offSide.push(null);
+    }
+  }
+  var N=demandPts.length;
+
+  // Count overstock vs understock frames
+  var overFrames=0, underFrames=0, totalOff=0;
+  for(var i=0;i<N;i++){
+    if(offSide[i]==='over') { overFrames++; totalOff++; }
+    else if(offSide[i]==='under') { underFrames++; totalOff++; }
+  }
+  var onPct=G.totalFrames>0?(G.onFrames/G.totalFrames*100):100;
+
+  // Canvas sizing
+  var PX_PER_POINT=4;
+  var chartW=Math.max(800, N*PX_PER_POINT);
+  var chartH=chartScrollWrap.querySelector('canvas').offsetHeight || 220;
+  var dpr=window.devicePixelRatio||1;
+  chartCanvas.width=chartW*dpr;
+  chartCanvas.height=chartH*dpr;
+  chartCanvas.style.width=chartW+'px';
+  chartCanvas.style.height=chartH+'px';
+  chartCtx.setTransform(dpr,0,0,dpr,0,0);
+
+  var allVals=demandPts.concat(actionPts);
+  var absMax=0;
+  for(var i=0;i<allVals.length;i++){
+    var a=Math.abs(allVals[i]);
+    if(a>absMax) absMax=a;
+  }
+  if(absMax<10) absMax=10;
+  var range=absMax*2.2;
+
+  var PAD_T=18, PAD_B=26, PAD_L=6, PAD_R=6;
+  var plotW=chartW-PAD_L-PAD_R;
+  var plotH=chartH-PAD_T-PAD_B;
+  var midY=PAD_T+plotH/2;
+  function valToY(v){ return midY - (v/(range/2))*(plotH/2); }
+  var bgDark=isDark;
+
+  // Background
+  chartCtx.fillStyle=bgDark?'#0d0d14':'#f5f5f0';
+  chartCtx.fillRect(0,0,chartW,chartH);
+
+  // Off-road zones with overstock/understock coloring
+  for(var i=0;i<N;i++){
+    if(offRoad[i]){
+      var x=PAD_L+(i/(N-1))*plotW;
+      var col=offSide[i]==='over'?'rgba(239,68,68,0.14)':'rgba(249,163,22,0.14)';
+      chartCtx.fillStyle=col;
+      chartCtx.fillRect(x-PX_PER_POINT/2,PAD_T,PX_PER_POINT,plotH);
+    }
+  }
+
+  // Label overstock/understock zones on chart (find first occurrence of each)
+  var labeledOver=false, labeledUnder=false;
+  chartCtx.font='bold 10px sans-serif';
+  chartCtx.textAlign='center';
+  for(var i=0;i<N;i++){
+    if(!labeledOver && offSide[i]==='over'){
+      var x=PAD_L+(i/(N-1))*plotW;
+      chartCtx.save();
+      chartCtx.translate(x, PAD_T+12);
+      chartCtx.rotate(-Math.PI/2);
+      chartCtx.fillStyle='rgba(239,68,68,0.6)';
+      chartCtx.fillText(t('lblOverstock'),0,0);
+      chartCtx.restore();
+      labeledOver=true;
+    }
+    if(!labeledUnder && offSide[i]==='under'){
+      var x=PAD_L+(i/(N-1))*plotW;
+      chartCtx.save();
+      chartCtx.translate(x, PAD_T+12);
+      chartCtx.rotate(-Math.PI/2);
+      chartCtx.fillStyle='rgba(249,163,22,0.6)';
+      chartCtx.fillText(t('lblUnderstock'),0,0);
+      chartCtx.restore();
+      labeledUnder=true;
+    }
+    if(labeledOver && labeledUnder) break;
+  }
+
+  // Grid
+  chartCtx.strokeStyle=bgDark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.05)';
+  chartCtx.lineWidth=1;
+  for(var q=-2;q<=2;q++){
+    var gy=midY - q*(plotH/4);
+    chartCtx.beginPath(); chartCtx.moveTo(PAD_L,gy); chartCtx.lineTo(chartW-PAD_R,gy); chartCtx.stroke();
+  }
+  chartCtx.strokeStyle=bgDark?'rgba(255,255,255,0.18)':'rgba(0,0,0,0.15)';
+  chartCtx.setLineDash([6,4]);
+  chartCtx.lineWidth=1;
+  chartCtx.beginPath(); chartCtx.moveTo(PAD_L,midY); chartCtx.lineTo(chartW-PAD_R,midY); chartCtx.stroke();
+  chartCtx.setLineDash([]);
+
+  // Time markers
+  chartCtx.font='11px sans-serif';
+  chartCtx.textAlign='center';
+  chartCtx.fillStyle=bgDark?'rgba(255,255,255,0.35)':'rgba(0,0,0,0.35)';
+  var totalSecs=G.gameDur;
+  var secStep=Math.max(1,Math.ceil(totalSecs/12));
+  for(var s=0;s<=totalSecs;s+=secStep){
+    var tx=PAD_L+(s/totalSecs)*plotW;
+    chartCtx.fillText(s+'s',tx,chartH-7);
+    chartCtx.strokeStyle=bgDark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.04)';
+    chartCtx.lineWidth=1;
+    chartCtx.beginPath(); chartCtx.moveTo(tx,PAD_T); chartCtx.lineTo(tx,chartH-PAD_B); chartCtx.stroke();
+  }
+
+  // Demand signal — blue
+  chartCtx.beginPath();
+  for(var i=0;i<N;i++){
+    var x=PAD_L+(i/(N-1))*plotW;
+    var y=valToY(demandPts[i]);
+    if(i===0) chartCtx.moveTo(x,y); else chartCtx.lineTo(x,y);
+  }
+  chartCtx.strokeStyle='#3b82f6';
+  chartCtx.lineWidth=3;
+  chartCtx.stroke();
+  var lastX=PAD_L+plotW;
+  chartCtx.lineTo(lastX, midY);
+  chartCtx.lineTo(PAD_L, midY);
+  chartCtx.closePath();
+  chartCtx.fillStyle=bgDark?'rgba(59,130,246,0.08)':'rgba(59,130,246,0.10)';
+  chartCtx.fill();
+
+  // Action signal — orange
+  chartCtx.beginPath();
+  for(var i=0;i<N;i++){
+    var x=PAD_L+(i/(N-1))*plotW;
+    var y=valToY(actionPts[i]);
+    if(i===0) chartCtx.moveTo(x,y); else chartCtx.lineTo(x,y);
+  }
+  chartCtx.strokeStyle='#f97316';
+  chartCtx.lineWidth=3;
+  chartCtx.stroke();
+  chartCtx.lineTo(lastX, midY);
+  chartCtx.lineTo(PAD_L, midY);
+  chartCtx.closePath();
+  chartCtx.fillStyle=bgDark?'rgba(249,115,22,0.08)':'rgba(249,115,22,0.10)';
+  chartCtx.fill();
+
+  // Inline labels
+  chartCtx.font='bold 12px sans-serif';
+  chartCtx.textAlign='left';
+  var labelIdx=Math.floor(N*0.02);
+  var lx=PAD_L+(labelIdx/(N-1))*plotW;
+  chartCtx.fillStyle='#3b82f6';
+  chartCtx.fillText(t('chartDemand'),lx+8,valToY(demandPts[labelIdx])-8);
+  chartCtx.fillStyle='#f97316';
+  chartCtx.fillText(t('chartAction'),lx+8,valToY(actionPts[labelIdx])+18);
+
+  // Amplification ratio (RMS)
+  var demandRMS=0, actionRMS=0;
+  for(var i=0;i<N;i++){
+    demandRMS+=demandPts[i]*demandPts[i];
+    actionRMS+=actionPts[i]*actionPts[i];
+  }
+  demandRMS=Math.sqrt(demandRMS/N);
+  actionRMS=Math.sqrt(actionRMS/N);
+  var ratio=demandRMS>1?(actionRMS/demandRMS):1;
+  ratio=Math.max(1,ratio);
+
+  $id('chAmpBadge').textContent=t('chartAmpLabel')+': '+ratio.toFixed(1)+'×';
+  $id('chAmpSub').textContent=t('chartAmpSub').replace('{ratio}',ratio.toFixed(1));
+
+  // ═══ SCENARIO PARAMETERS — translated to real-world units ═══
+  var dLvl=paramLevel(G.delay,0,30);
+  var sLvl=paramLevel(G.baseSpeed,1,8);
+  var hVal=parseInt(sFog.value);
+  var hLvl=hVal>=80?{key:'pLo',cls:'lo'}:hVal>=50?{key:'pMd',cls:'md'}:{key:'pHi',cls:'hi'};
+  // Note: for headlight, high value = good, so label is inverted for "risk"
+
+  // Real-world translations:
+  // Delay: each unit ≈ 1 day of information lag (0=real-time, 30=1 month)
+  var delayDays=G.delay;
+  var delayReal=G.delay===0?(lang==='tr'?'Gerçek zamanlı':'Real-time'):
+    (delayDays<=7?(delayDays+(lang==='tr'?' gün gecikme':' days lag')):
+    (Math.round(delayDays/7)+(lang==='tr'?' hafta gecikme':' weeks lag')));
+
+  // Speed: 1=stable market, 8=extreme volatility
+  var speedReal=G.baseSpeed<=2?(lang==='tr'?'Sabit piyasa (temel tüketim)':'Stable market (staple goods)'):
+    G.baseSpeed<=4?(lang==='tr'?'Normal dalgalanma (mevsimsel)':'Normal fluctuation (seasonal)'):
+    G.baseSpeed<=6?(lang==='tr'?'Dalgalı piyasa (moda/trend)':'Volatile market (fashion/trend)'):
+    (lang==='tr'?'Aşırı dalgalanma (kriz/pandemi)':'Extreme volatility (crisis/pandemic)');
+
+  // Headlight: 20m=2 weeks forecast, 100m=10 weeks forecast
+  var forecastWeeks=Math.round(hVal/10);
+  var headlightReal=forecastWeeks+(lang==='tr'?' haftalık tahmin ufku':' weeks forecast horizon');
+
+  // Duration: game seconds → business quarters (30s ≈ 1 quarter)
+  var quarters=Math.round(G.gameDur/15);
+  var durationReal=quarters+(quarters===1?(lang==='tr'?' çeyrek dönem':' quarter'):(lang==='tr'?' çeyrek dönem':' quarters'));
+
+  $id('chParams').innerHTML=
+    '<div class="ch-param"><div class="ch-param-label">'+t('pDelay')+'</div><div class="ch-param-val '+dLvl.cls+'">'+t(dLvl.key)+'</div><div class="ch-param-desc">'+delayReal+'<br><small style="opacity:.6">'+t('pDelayDesc')+'</small></div></div>'+
+    '<div class="ch-param"><div class="ch-param-label">'+t('pSpeed')+'</div><div class="ch-param-val '+sLvl.cls+'">'+t(sLvl.key)+'</div><div class="ch-param-desc">'+speedReal+'<br><small style="opacity:.6">'+t('pSpeedDesc')+'</small></div></div>'+
+    '<div class="ch-param"><div class="ch-param-label">'+t('pHeadlight')+'</div><div class="ch-param-val '+hLvl.cls+'">'+forecastWeeks+(lang==='tr'?' hafta':' wks')+'</div><div class="ch-param-desc">'+headlightReal+'<br><small style="opacity:.6">'+t('pHeadlightDesc')+'</small></div></div>'+
+    '<div class="ch-param"><div class="ch-param-label">'+t('pDuration')+'</div><div class="ch-param-val md">'+durationReal+'</div><div class="ch-param-desc">'+(lang==='tr'?'Oyun süresi: ':'Game time: ')+G.gameDur+'s<br><small style="opacity:.6">'+t('pDurationDesc')+'</small></div></div>';
+
+  // ═══ FINANCIAL OUTCOME ═══
+  // Revenue: base $1M for duration, reduced by off-road time
+  var baseRevenue=1000000;
+  var overPct=overFrames/Math.max(1,N);
+  var underPct=underFrames/Math.max(1,N);
+  var overCost=Math.round(overPct*baseRevenue*0.6); // holding costs = 60% of proportional loss
+  var underCost=Math.round(underPct*baseRevenue*1.2); // lost revenue = 120% (opportunity cost)
+  var netProfit=baseRevenue-overCost-underCost;
+
+  var finIcon, finClass, finHeadline, finDetail;
+  if(onPct>=92){
+    finIcon=t('finProfitIcon'); finClass='profit';
+    finHeadline=t('finProfit');
+    finDetail=t('finProfitDetail');
+  } else if(onPct>=60){
+    finIcon=t('finLossIcon'); finClass='loss';
+    finHeadline=t('finModerate');
+    finDetail=t('finModerateDetail').replace('{over}',overCost.toLocaleString()).replace('{under}',underCost.toLocaleString());
+  } else {
+    finIcon=t('finBankruptIcon'); finClass='bankrupt';
+    finHeadline=t('finBankrupt');
+    finDetail=t('finBankruptDetail').replace('{over}',overCost.toLocaleString()).replace('{under}',underCost.toLocaleString());
+  }
+
+  var curr=lang==='tr'?'₺':'$';
+  $id('chFinance').innerHTML=
+    '<div class="ch-fin-icon">'+finIcon+'</div>'+
+    '<div class="ch-fin-headline '+finClass+'">'+finHeadline+'</div>'+
+    '<div class="ch-fin-grid">'+
+      '<div class="ch-fin-cell"><div class="ch-fin-cell-label">'+t('finRevenue')+'</div><div class="ch-fin-cell-val grn">'+curr+baseRevenue.toLocaleString()+'</div></div>'+
+      '<div class="ch-fin-cell"><div class="ch-fin-cell-label">'+t('finNetResult')+'</div><div class="ch-fin-cell-val '+(netProfit>=0?'grn':'red')+'">'+curr+netProfit.toLocaleString()+'</div></div>'+
+      '<div class="ch-fin-cell"><div class="ch-fin-cell-label">'+t('finOverCost')+'</div><div class="ch-fin-cell-val red">-'+curr+overCost.toLocaleString()+'</div></div>'+
+      '<div class="ch-fin-cell"><div class="ch-fin-cell-label">'+t('finUnderCost')+'</div><div class="ch-fin-cell-val org">-'+curr+underCost.toLocaleString()+'</div></div>'+
+    '</div>'+
+    '<div class="ch-fin-detail">'+finDetail+'</div>';
+
+  // ═══ ADVICE ═══
+  var advHtml='<div class="adv-head">'+t('advHead')+'</div>';
+  if(G.delay>2) advHtml+='<p>'+t('advDelay')+'</p>';
+  if(hVal<70) advHtml+='<p>'+t('advHeadlight')+'</p>';
+  if(G.baseSpeed>=5) advHtml+='<p>'+t('advSpeed')+'</p>';
+  advHtml+='<p>'+t('advGeneral')+'</p>';
+  $id('chAdvice').innerHTML=advHtml;
+
+  // ═══ EXPLANATION ═══
+  var explKey;
+  if(G.delay<=1) explKey='chartExplain0';
+  else if(G.delay<=5) explKey='chartExplainLow';
+  else explKey='chartExplainHigh';
+  $id('chExplain').innerHTML=t(explKey);
+
+  chartScrollWrap.scrollLeft=0;
+}
+
+function hideChart(){ chartMo.classList.remove('vis'); }
+
+// Chart scroll — buttons with hold-to-scroll
+function chartScrollDir(dir){
+  chartScrollWrap.scrollBy({left:dir*180,behavior:'smooth'});
+}
+$id('chNavL').addEventListener('click', function(){ chartScrollDir(-1); });
+$id('chNavR').addEventListener('click', function(){ chartScrollDir(1); });
+
+// Keyboard arrows scroll chart when chart is open
+document.addEventListener('keydown', function(e){
+  if(!chartMo.classList.contains('vis')) return;
+  if(e.key==='ArrowLeft'){ e.preventDefault(); chartScrollDir(-1); }
+  if(e.key==='ArrowRight'){ e.preventDefault(); chartScrollDir(1); }
+  if(e.key==='Escape') hideChart();
+});
+
+// ═══════════════════════════════════════════════════════════════
+// INPUT
+// ═══════════════════════════════════════════════════════════════
+var keys={};
+document.addEventListener('keydown', function(e){
+  keys[e.key]=true;
+  if(e.key===' '&&!G.running){ e.preventDefault(); audio.init(); startGame(); }
+  if(G.running&&(e.key==='ArrowLeft'||e.key==='ArrowRight')) e.preventDefault();
+});
+document.addEventListener('keyup', function(e){ keys[e.key]=false; });
+
+function addStepBtn(btn,dir){
+  function doStep(){
+    G.sliderPos=Math.max(-100,Math.min(100,G.sliderPos+dir*BTN_STEP));
+    steerSlider.value=G.sliderPos; G.smoothedInput=(G.sliderPos/100)*SP;
+    btn.classList.add('act'); setTimeout(function(){ btn.classList.remove('act'); },120); audio.init();
+  }
+  btn.addEventListener('click',doStep);
+  btn.addEventListener('touchstart',function(e){ e.preventDefault(); doStep(); },{passive:false});
+}
+addStepBtn(bL,-1); addStepBtn(bR,1);
+
+steerSlider.addEventListener('mousedown', function(){ G.sliderActive=true; audio.init(); });
+steerSlider.addEventListener('touchstart', function(){ G.sliderActive=true; audio.init(); },{passive:true});
+document.addEventListener('mouseup',     function(){ G.sliderActive=false; });
+document.addEventListener('touchend',    function(){ G.sliderActive=false; });
+document.addEventListener('touchcancel', function(){ G.sliderActive=false; });
+
+sDelay.addEventListener('input', function(){ $id('dDelay').textContent=sDelay.value; });
+sSpeed.addEventListener('input', function(){ $id('dSpeed').textContent=sSpeed.value; });
+sDur.addEventListener('input',   function(){ $id('dDur').textContent=sDur.value+'s'; });
+
+$id('themeBtn').addEventListener('click', toggleTheme);
+$id('wThemeBtn').addEventListener('click', toggleTheme);
+$id('chThemeBtn').addEventListener('click', toggleTheme);
+$id('btnEN').addEventListener('click',  function(){ setLang('en'); });
+$id('btnTR').addEventListener('click',  function(){ setLang('tr'); });
+$id('helpBtn').addEventListener('click', showWelcome);
+$id('chHelpBtn').addEventListener('click', showWelcome);
+// welcome lang buttons also call setLang (syncs everything)
+$id('wBtnEN').addEventListener('click', function(){ setLang('en'); });
+$id('wBtnTR').addEventListener('click', function(){ setLang('tr'); });
+$id('chBtnEN').addEventListener('click', function(){ setLang('en'); });
+$id('chBtnTR').addEventListener('click', function(){ setLang('tr'); });
+$id('wDismiss').addEventListener('click', dismissWelcome);
+btnRs.addEventListener('click', resetGame);
+$id('mCh').addEventListener('click', function(){ showChart(); });
+$id('chClose').addEventListener('click', hideChart);
+$id('chCloseBottom').addEventListener('click', function(){ hideChart(); });
+chExportBtn.addEventListener('click', exportLearnings);
+
+function haptic(d){ if(navigator.vibrate) navigator.vibrate(d||40); }
+
+// Tooltips
+var tt = $id('tt');
+document.querySelectorAll('.info-btn').forEach(function(btn){
+  btn.addEventListener('mouseenter', function(e){
+    tt.textContent = t(btn.getAttribute('data-tt'));
+    tt.style.opacity = '1';
+    var rect = btn.getBoundingClientRect();
+    tt.style.left = Math.min(window.innerWidth - 250, rect.left + 20) + 'px';
+    tt.style.top = (rect.top - 10) + 'px';
+  });
+  btn.addEventListener('mouseleave', function(){ tt.style.opacity = '0'; });
+  btn.addEventListener('touchstart', function(e){
+    e.preventDefault();
+    tt.textContent = t(btn.getAttribute('data-tt'));
+    tt.style.opacity = '1';
+    var rect = btn.getBoundingClientRect();
+    tt.style.left = Math.min(window.innerWidth - 250, rect.left + 20) + 'px';
+    tt.style.top = (rect.top - 10) + 'px';
+    setTimeout(function(){ tt.style.opacity = '0'; }, 3000);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// PDF EXPORT — opens styled printable page, user prints to PDF
+// ═══════════════════════════════════════════════════════════════
+function exportLearnings(){
+  var namePrompt = lang==='tr'?'Rapor için adınızı girin:':'Enter your name for the report:';
+  var name = prompt(namePrompt, lang==='tr'?'Öğrenci':'Student');
+  if(name===null||name==='') return;
+
+  var lastRun = G.results[G.results.length-1];
+  if(!lastRun) return;
+
+  var onPct=lastRun.on;
+  var fateKey=onPct>=92?'fateProfit':onPct>=60?'fateLoss':'fateBankrupt';
+  var fateEmoji=onPct>=92?'🏆':onPct>=60?'📉':'💀';
+
+  // Amplification
+  var demRMS=0,actRMS=0;
+  for(var i=0;i<G.pathTrace.length;i++){
+    var pt=G.pathTrace[i];
+    var rox=(pt.worldSeg>=0&&pt.worldSeg<G.road.length)?G.road[pt.worldSeg].ox:0;
+    demRMS+=rox*rox; actRMS+=pt.x*pt.x;
+  }
+  demRMS=Math.sqrt(demRMS/G.pathTrace.length);
+  actRMS=Math.sqrt(actRMS/G.pathTrace.length);
+  var ratio=demRMS>1?(actRMS/demRMS):1;
+
+  // Over/Under Stock frames
+  var raw=G.pathTrace;
+  var step=Math.max(1,Math.floor(raw.length/800));
+  var N=0, overFrames=0, underFrames=0;
+  for(var i=0;i<raw.length;i+=step){
+    N++;
+    var pt=raw[i];
+    var seg=(pt.worldSeg>=0 && pt.worldSeg<G.road.length)?G.road[pt.worldSeg]:null;
+    if(pt.isOff && seg){
+      if(pt.x > seg.ox) overFrames++;
+      else underFrames++;
+    }
+  }
+
+  // Financial Outcome
+  var baseRevenue=1000000;
+  var overPct=overFrames/Math.max(1,N);
+  var underPct=underFrames/Math.max(1,N);
+  var overCost=Math.round(overPct*baseRevenue*0.6); 
+  var underCost=Math.round(underPct*baseRevenue*1.2);
+  var netProfit=baseRevenue-overCost-underCost;
+  var curr=lang==='tr'?'₺':'$';
+
+  // Real-world param translations
+  var delayDays=lastRun.dly;
+  var delayReal=delayDays===0?(lang==='tr'?'Gerçek zamanlı':'Real-time'):
+    (delayDays<=7?(delayDays+(lang==='tr'?' gün':' days')):(Math.round(delayDays/7)+(lang==='tr'?' hafta':' weeks')));
+  var forecastWeeks=Math.round(lastRun.fog/10);
+  var speedDesc=lastRun.spd<=2?(lang==='tr'?'Sabit':'Stable'):lastRun.spd<=4?(lang==='tr'?'Normal':'Normal'):lastRun.spd<=6?(lang==='tr'?'Dalgalı':'Volatile'):(lang==='tr'?'Aşırı':'Extreme');
+
+  var explainText=lastRun.dly<=1?t('chartExplain0'):lastRun.dly<=5?t('chartExplainLow'):t('chartExplainHigh');
+
+  var today=new Date();
+  var dateStr=today.toLocaleDateString(lang==='tr'?'tr-TR':'en-US',{year:'numeric',month:'long',day:'numeric'});
+
+  var isEN=lang==='en';
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+(isEN?'Bullwhip Effect Report':'Kamçı Etkisi Raporu')+'</title>';
+  html+='<style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;color:#222;padding:15px 30px;max-width:850px;margin:0 auto;line-height:1.3;font-size:11px;}';
+  html+='h1{color:#d35400;font-size:18px;text-align:center;margin-bottom:2px;font-family:Georgia,serif;}';
+  html+='.subtitle{text-align:center;color:#666;font-size:12px;margin-bottom:2px;}';
+  html+='.date{text-align:center;color:#999;font-size:10px;margin-bottom:10px;}';
+  html+='h2{color:#d35400;font-size:13px;margin:8px 0 4px;border-bottom:1px solid #ddd;padding-bottom:2px;}';
+  html+='table{width:100%;border-collapse:collapse;margin:4px 0;font-size:10px;}';
+  html+='th{background:#f0f0f0;color:#333;padding:4px 6px;text-align:left;border-bottom:2px solid #ccc;}';
+  html+='td{border-bottom:1px solid #eee;padding:4px 6px;}';
+  html+='.metric-val{font-weight:bold;font-family:monospace;color:#d35400;}';
+  
+  html+='.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px;}';
+  html+='.box{background:#fdfdfd;border:1px solid #eee;border-radius:6px;padding:8px;}';
+  html+='.box-title{font-weight:bold;font-size:11px;margin-bottom:6px;color:#444;}';
+  
+  html+='.fin-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:4px;}';
+  html+='.fin-cell{background:#f5f5f5;padding:4px;border-radius:4px;text-align:center;}';
+  html+='.fin-lbl{font-size:8px;color:#666;text-transform:uppercase;}';
+  html+='.fin-val{font-family:monospace;font-size:11px;font-weight:bold;}';
+  html+='.val-g{color:#27ae60;}.val-r{color:#c0392b;}.val-o{color:#d35400;}';
+  
+  html+='.fate-box{text-align:center;background:#f9f9f9;border:1px solid #eee;border-radius:6px;padding:8px;}';
+  html+='.fate{font-size:14px;font-weight:bold;margin:2px 0;}';
+  html+='.fate.profit{color:#27ae60;}.fate.loss{color:#d35400;}.fate.bankrupt{color:#c0392b;}';
+  
+  html+='.advice-box{background:#eefdf3;border:1px solid #a3e4b7;border-radius:6px;padding:8px;margin:8px 0;}';
+  html+='.advice-box p{margin-bottom:3px;} .advice-box strong{color:#27ae60;}';
+  
+  html+='.explain{font-size:10px;line-height:1.4;margin-bottom:4px;}';
+  html+='.ce-head{font-weight:bold;color:#d35400;margin-top:6px;margin-bottom:2px;}';
+  html+='.ce-analogy{background:#f0f7ff;border:1px solid #cce0ff;padding:4px 6px;border-radius:4px;margin:3px 0;font-size:10px;}';
+  html+='.ce-analogy strong{color:#0055cc;}';
+  
+  html+='.footer{text-align:center;color:#aaa;font-size:8px;margin-top:10px;padding-top:6px;border-top:1px solid #eee;}';
+  html+='@media print{body{padding:10px 15px;} .box, .fate-box, .advice-box, .ce-analogy { break-inside: avoid; }}</style></head><body>';
+
+  // Header
+  html+='<h1>'+(isEN?'Bullwhip Effect Simulator — Learnings Report':'Kamçı Etkisi Simülatörü — Öğrenme Raporu')+'</h1>';
+  html+='<div class="subtitle">'+(isEN?'Report for: ':'Rapor: ')+name+'</div>';
+  html+='<div class="date">'+dateStr+'</div>';
+
+  html+='<div class="grid-2">';
+  
+  // Game Results Box
+  html+='<div class="box"><div class="box-title">'+(isEN?'📊 Game Metrics':'📊 Oyun Metrikleri')+'</div>';
+  html+='<table><tr><th>'+(isEN?'Metric':'Metrik')+'</th><th>'+(isEN?'Value':'Değer')+'</th><th>'+(isEN?'Real-World':'Gerçek Dünya')+'</th></tr>';
+  html+='<tr><td>'+(isEN?'On-Road':'Yolda')+'</td><td class="metric-val">'+onPct.toFixed(1)+'%</td><td>'+(isEN?'Inventory in range':'Envanter dengede')+'</td></tr>';
+  html+='<tr><td>'+(isEN?'Violations':'İhlaller')+'</td><td class="metric-val">'+lastRun.vio+'</td><td>'+(isEN?'Stockouts / Overstock':'Stoksuz / Fazla stok')+'</td></tr>';
+  html+='<tr><td>'+(isEN?'Delay':'Gecikme')+'</td><td class="metric-val">'+lastRun.dly+'</td><td>'+delayReal+'</td></tr>';
+  html+='<tr><td>'+(isEN?'Volatility':'Oynaklık')+'</td><td class="metric-val">'+lastRun.spd+'</td><td>'+speedDesc+'</td></tr>';
+  html+='<tr><td>'+(isEN?'Horizon':'Ufuk')+'</td><td class="metric-val">'+lastRun.fog+'m</td><td>'+forecastWeeks+(isEN?' weeks':' hafta')+'</td></tr>';
+  html+='</table></div>';
+
+  // Financial Outcome Box
+  html+='<div class="box"><div class="box-title">'+(isEN?'💵 Financial Outcome':'💵 Finansal Sonuç')+'</div>';
+  html+='<div class="fin-grid">';
+  html+='<div class="fin-cell"><div class="fin-lbl">'+t('finRevenue')+'</div><div class="fin-val val-g">'+curr+baseRevenue.toLocaleString()+'</div></div>';
+  html+='<div class="fin-cell"><div class="fin-lbl">'+t('finNetResult')+'</div><div class="fin-val '+(netProfit>=0?'val-g':'val-r')+'">'+curr+netProfit.toLocaleString()+'</div></div>';
+  html+='<div class="fin-cell"><div class="fin-lbl">'+t('finOverCost')+'</div><div class="fin-val val-r">-'+curr+overCost.toLocaleString()+'</div></div>';
+  html+='<div class="fin-cell"><div class="fin-lbl">'+t('finUnderCost')+'</div><div class="fin-val val-o">-'+curr+underCost.toLocaleString()+'</div></div>';
+  html+='</div>';
+  var finClass=onPct>=92?'profit':onPct>=60?'loss':'bankrupt';
+  html+='<div class="fate-box"><div class="box-title">'+(isEN?'Company Status':'Şirket Durumu')+'</div><div class="fate '+finClass+'">'+fateEmoji+' '+t(fateKey)+'</div></div>';
+  html+='</div>'; // end box
+  
+  html+='</div>'; // end grid-2
+
+  // Advice
+  var advHtml='<div class="advice-box"><div class="box-title">'+t('advHead')+'</div>';
+  if(lastRun.dly>2) advHtml+='<p>'+t('advDelay')+'</p>';
+  if(lastRun.fog<70) advHtml+='<p>'+t('advHeadlight')+'</p>';
+  if(lastRun.spd>=5) advHtml+='<p>'+t('advSpeed')+'</p>';
+  advHtml+='<p>'+t('advGeneral')+'</p></div>';
+  html+=advHtml;
+
+  // Explanation
+  html+='<h2>'+(isEN?'🧠 What Happened — And Why':'🧠 Ne Oldu — Ve Neden')+'</h2>';
+  html+='<div class="explain">'+explainText+'</div>';
+
+  // What is the Bullwhip Effect
+  html+='<h2>'+(isEN?'📚 What Is the Bullwhip Effect?':'📚 Kamçı Etkisi Nedir?')+'</h2>';
+  html+='<div class="explain">'+t('eP1')+' '+t('eP2')+'</div>';
+
+  // Footer
+  html+='<div class="footer">Prof. Dr. Erkut AKKARTAL | Yeditepe Üniversitesi | 2026</div>';
+  html+='<script>window.onload=function(){window.print();}<\/script>';
+  html+='</body></html>';
+
+  var win=window.open('','_blank');
+  if(win){
+    win.document.write(html);
+    win.document.close();
+  } else {
+    alert(isEN?'Please allow pop-ups for this site to export the report.':'Raporu dışa aktarmak için bu sitenin açılır pencerelerini etkinleştirin.');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INPUT
+// ═══════════════════════════════════════════════════════════════
+function applyWelcomeText(){
+  $id('wTitle').textContent  = t('wTitle');
+  $id('wVer').textContent    = t('wVer');
+  $id('devIcon').textContent = isMobile?'📱':'🖥️';
+  $id('devTxt').textContent  = isMobile?t('wDevM'):t('wDevD');
+  $id('wHint').innerHTML     = t('wHint');
+  $id('ws1').innerHTML=t('ws1'); $id('ws2').innerHTML=t('ws2');
+  $id('ws3').innerHTML=t('ws3'); $id('ws4').innerHTML=t('ws4');
+  $id('wcL1').textContent=t('wcL1'); $id('wcV1').textContent=t('wcV1');
+  $id('wcL2').textContent=t('wcL2'); $id('wcV2').textContent=t('wcV2');
+  $id('wcL3').textContent=t('wcL3'); $id('wcV3').textContent=t('wcV3');
+  $id('wcL4').textContent=t('wcL4'); $id('wcV4').textContent=t('wcV4');
+  $id('wDismiss').textContent=t('wDismiss');
+  // sync welcome lang toggle buttons
+  $id('wBtnEN').classList.toggle('active', lang==='en');
+  $id('wBtnTR').classList.toggle('active', lang==='tr');
+}
+
+function showWelcome(){ wmo.classList.add('vis'); applyWelcomeText(); }
+function dismissWelcome(){ wmo.classList.remove('vis'); requestAnimationFrame(function(){ resizeCanvas(true); }); }
+
+// ═══════════════════════════════════════════════════════════════
+// INIT — detect device language, then boot
+// ═══════════════════════════════════════════════════════════════
+(function detectLang(){
+  try{
+    var savedLang = localStorage.getItem('bw_lang');
+    if(savedLang) { lang = savedLang; return; }
+  }catch(e){}
+  var nav = navigator.language || navigator.userLanguage || 'en';
+  if(nav.toLowerCase().indexOf('tr') === 0) lang = 'tr';
+})();
+
+// sync header lang buttons to detected lang
+$id('btnEN').classList.toggle('active', lang==='en');
+$id('btnTR').classList.toggle('active', lang==='tr');
+
+try{
+  var savedTheme = localStorage.getItem('bw_theme');
+  if(savedTheme === 'light') toggleTheme();
+}catch(e){}
+
+applyText();
+resizeCanvas(false);
+updateFogOverlay();
+drawStatic();
+
+setTimeout(showWelcome, 80);
+
+})();
+</script>
+</body>
+</html>
