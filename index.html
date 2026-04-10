@@ -182,6 +182,7 @@ body:not(.dark) .fog-overlay{background:linear-gradient(to bottom,#1a2a1a 0%,#1a
 .wsteps{display:flex;flex-direction:column;gap:10px;margin-bottom:16px;}
 @media(min-width: 600px) {
   .wsteps{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .wstep:last-child:nth-child(odd){grid-column:1/-1;}
 }
 .wstep{display:flex;gap:12px;align-items:flex-start;background:var(--bg3);border-radius:10px;padding:11px 12px;border:1px solid var(--border);}
 .wsn{width:24px;height:24px;border-radius:50%;background:rgba(249,115,22,.18);color:#f97316;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
@@ -372,6 +373,7 @@ html.fs-l .cfg-range{width:100%!important;flex:1;}
       <div class="wstep"><div class="wsn">2</div><div class="wst" id="ws2"></div></div>
       <div class="wstep"><div class="wsn">3</div><div class="wst" id="ws3"></div></div>
       <div class="wstep"><div class="wsn">4</div><div class="wst" id="ws4"></div></div>
+      <div class="wstep"><div class="wsn">5</div><div class="wst" id="ws5"></div></div>
     </div>
     
     <div class="wmode" style="margin-top:20px;">
@@ -507,26 +509,21 @@ html.fs-l .cfg-range{width:100%!important;flex:1;}
   <!-- Chart Modal — the lasting impression page -->
   <div class="chart-mo" id="chartMo">
     <div class="chart-box">
-      <div class="hrow" style="margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:10px;">
-        <div class="hleft">
-          <button class="icon-btn" id="chThemeBtn">☀</button>
-          <div class="fs-sel" id="chFsSel">
-            <button class="fs-btn fs-btn-s fs-active" data-fs="s" title="Small">A</button>
-            <button class="fs-btn fs-btn-m" data-fs="m" title="Medium">A</button>
-            <button class="fs-btn fs-btn-l" data-fs="l" title="Large">A</button>
-          </div>
+      <!-- Unified single-row header: theme | fs | TITLE | lang | help | close -->
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:nowrap;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:10px;">
+        <button class="icon-btn" id="chThemeBtn" style="flex-shrink:0;">☀</button>
+        <div class="fs-sel" id="chFsSel" style="flex-shrink:0;">
+          <button class="fs-btn fs-btn-s fs-active" data-fs="s" title="Small">A</button>
+          <button class="fs-btn fs-btn-m" data-fs="m" title="Medium">A</button>
+          <button class="fs-btn fs-btn-l" data-fs="l" title="Large">A</button>
         </div>
-        <div class="hright">
-          <div style="display:flex;gap:3px;">
-            <button class="lang-btn active" id="chBtnEN" title="English">🇬🇧</button>
-            <button class="lang-btn" id="chBtnTR" title="Türkçe">🇹🇷</button>
-          </div>
-          <button class="help-btn" id="chHelpBtn">?</button>
+        <h2 id="chTitle" style="flex:1;min-width:0;font-size:clamp(12px,3.5vw,17px);font-weight:800;background:linear-gradient(135deg,#f97316,#ef4444);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;">The Bullwhip Effect</h2>
+        <div style="display:flex;gap:3px;flex-shrink:0;">
+          <button class="lang-btn active" id="chBtnEN" title="English">🇬🇧</button>
+          <button class="lang-btn" id="chBtnTR" title="Türkçe">🇹🇷</button>
         </div>
-      </div>
-      <div class="chart-header">
-        <h2 id="chTitle">The Bullwhip Effect</h2>
-        <button class="chart-close-btn" id="chClose">✕</button>
+        <button class="help-btn" id="chHelpBtn" style="flex-shrink:0;">?</button>
+        <button class="chart-close-btn" id="chClose" style="flex-shrink:0;">✕</button>
       </div>
       <div class="chart-legend">
         <span class="chart-leg-item"><span class="leg-swatch leg-demand"></span><span id="chLegDemand">Demand (Road)</span></span>
@@ -661,6 +658,7 @@ var S={
     ws2:'Notice the <strong>Delay is set to 30 (max)</strong> initially.<br><p>Watch your control collapse. Then lower it to 0 and see the difference.</p>',
     ws3:'The <strong>orange ▼</strong> above the slider shows where your wheels actually point — lagging behind your input.<br><p>That gap is the Bullwhip Effect.</p>',
     ws4:'The <strong>dark zone</strong> is fog — unknown future demand.<br><p>Headlight distance sets your forecast horizon.</p>',
+    ws5:'<strong>Vehicle Speed</strong> represents market demand volatility.<br><p>It shows how customer orders change over time — higher speed means more volatile demand signals.</p>',
     wcL1:'Delay',wcV1:'Info lag (0=instant, 15=chaos)',
     wcL2:'Speed',wcV2:'Road scroll speed',
     wcL3:'Duration',wcV3:'Run length (seconds)',
@@ -749,6 +747,7 @@ var S={
     ws2:'Başlangıçta <strong>Gecikmenin 30 (maksimum)</strong> olduğuna dikkat edin.<br><p>Kontrolünüzün nasıl kaybolduğunu izleyin. Sonra 0\'a düşürün ve farkı görün.</p>',
     ws3:'Kaydırıcının üzerindeki <strong>turuncu ▼</strong> tekerleği gerçekte nereye baktığını gösterir — girişinizin gerisinde kalır.<br><p>O boşluk Kamçı Etkisidir.</p>',
     ws4:'<strong>Karanlık bölge</strong> sisdir — bilinmeyen gelecek talebi.<br><p>Far mesafesi tahmin ufkunu ayarlar.</p>',
+    ws5:'<strong>Araç Hızı</strong> piyasadaki talep oynaklığıdır.<br><p>Zaman içinde müşterilerin siparişlerinin değişimini gösterir — yüksek hız, daha fazla talep dalgalanması demektir.</p>',
     wcL1:'Gecikme',wcV1:'Bilgi gecikmesi (0=anında, 15=kaos)',
     wcL2:'Hız',wcV2:'Yolun hareket hızı',
     wcL3:'Süre',wcV3:'Tur süresi (saniye)',
@@ -2182,6 +2181,7 @@ function applyWelcomeText(){
   safeSet('wHint', t('wHint'), true);
   safeSet('ws1', t('ws1'), true); safeSet('ws2', t('ws2'), true);
   safeSet('ws3', t('ws3'), true); safeSet('ws4', t('ws4'), true);
+  safeSet('ws5', t('ws5'), true);
   safeSet('wModeMan', t('wModeMan'));
   safeSet('wModeGyro', t('wModeGyro'));
   safeSet('wDismiss', t('wDismiss'));
