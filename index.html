@@ -2,10 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Bullwhip Effect Simulator v0.9</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bullwhip Effect Simulator v0.91</title>
+<meta name="theme-color" content="#0a0a0f">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{height:100%;}
@@ -39,8 +42,8 @@ body{background:var(--bg);color:var(--text);font-family:'Outfit',sans-serif;over
 .help-btn:hover{background:rgba(249,115,22,.3);}
 
 /* STATS */
-.prog{width:100%;height:3px;background:rgba(128,128,128,.12);border-radius:2px;overflow:hidden;margin-bottom:5px;}
-.prog-fill{height:100%;background:linear-gradient(90deg,#22c55e,#f97316,#ef4444);border-radius:2px;width:0%;transition:width .1s linear;}
+.prog{width:100%;height:6px;background:rgba(128,128,128,.12);border-radius:3px;overflow:hidden;margin-bottom:5px;}
+.prog-fill{height:100%;background:linear-gradient(90deg,#22c55e,#f97316,#ef4444);border-radius:3px;width:0%;transition:width .1s linear;}
 .stats{display:flex;justify-content:center;margin-bottom:5px;padding:6px 8px;background:var(--bg3);border-radius:10px;border:1px solid var(--border);}
 .stat{text-align:center;flex:1;}
 .stat-l{font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;}
@@ -49,6 +52,23 @@ body{background:var(--bg);color:var(--text);font-family:'Outfit',sans-serif;over
 
 /* CANVAS */
 .game-wrap{position:relative;border-radius:12px 12px 0 0;overflow:hidden;border:1px solid var(--border);border-bottom:none;background:#0e1b0e;width:100%;}
+.game-wrap canvas{display:block;width:100%;height:auto;}
+
+/* PLAY MODE OVERLAYS */
+body.playing .app{padding:0;display:flex;flex-direction:column;height:100vh;}
+body.playing .hrow, body.playing .cfg-row, body.playing .expl, body.playing .foot{display:none !important;}
+body.playing .game-wrap{border-radius:0;border:none;flex:1;min-height:0;display:flex;flex-direction:column;}
+body.playing .game-wrap canvas{flex:1;width:100%;height:100% !important;object-fit:fill;}
+body.playing .cpanel{border-radius:0;border:none;margin-bottom:0;}
+body.playing .prog{border-radius:0;margin-bottom:0;}
+body.playing .stats{border-radius:0;border-left:none;border-right:none;margin-bottom:0;}
+body.playing .active-params{display:flex;}
+
+.btn-corner{position:absolute;top:10px;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:20;backdrop-filter:blur(4px);transition:all 0.2s;}
+.btn-corner:hover{background:rgba(255,255,255,0.25);}
+.btn-mute{left:10px;}
+.btn-reset{right:10px;}
+.btn-corner.muted{color:#ef4444;border-color:rgba(239,68,68,0.5);}
 canvas{display:block;width:100%;height:auto;}
 .fog-overlay{position:absolute;top:0;left:0;right:0;pointer-events:none;z-index:5;height:0;}
 body.dark .fog-overlay{background:linear-gradient(to bottom,#0a0a0f 0%,#0a0a0f 52%,rgba(10,10,15,0) 100%);}
@@ -57,8 +77,8 @@ body:not(.dark) .fog-overlay{background:linear-gradient(to bottom,#1a2a1a 0%,#1a
 /* overlay text — bigger, readable on mobile */
 .overlay{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;z-index:10;width:90%;}
 .tooltip{position:fixed;background:rgba(0,0,0,0.9);color:#fff;padding:8px 12px;border-radius:6px;font-size:12px;line-height:1.4;z-index:400;pointer-events:none;opacity:0;transition:opacity .2s;max-width:240px;border:1px solid #f97316;box-shadow:0 4px 12px rgba(0,0,0,0.5);}
-.info-btn{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:rgba(128,128,128,0.2);color:var(--text3);font-size:9px;font-weight:700;font-style:italic;cursor:help;margin-left:4px;border:1px solid rgba(128,128,128,0.3);}
-.info-btn:hover{background:#f97316;color:#fff;border-color:#f97316;}
+.info-btn{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:rgba(59,130,246,0.1);color:#3b82f6;font-size:10px;font-weight:700;font-style:italic;cursor:help;margin-left:4px;border:1px solid rgba(59,130,246,0.3);transition:all .2s;}
+.info-btn:hover{background:#3b82f6;color:#fff;border-color:#3b82f6;}
 .overlay h2{font-size:clamp(22px,6vw,32px);font-weight:800;margin-bottom:8px;}
 .overlay p{font-size:clamp(13px,3vw,16px);color:var(--text2);line-height:1.5;}
 .overlay.rdy h2{color:#f97316;}.overlay.fin h2{color:#22c55e;}
@@ -86,37 +106,43 @@ body:not(.dark) .fog-overlay{background:linear-gradient(to bottom,#1a2a1a 0%,#1a
 /* Hide L/R buttons in gyro mode */
 .gyro-mode .steer-btn{display:none;}
 
-/* Config sliders — responsive grid: 4-col wide, 2x2 medium, 1-col narrow. NEVER 3+1. */
-.cfg-row{display:grid;grid-template-columns:repeat(4,auto);gap:8px 14px;justify-content:center;align-items:start;margin-top:2px;}
-.cfg-row .cfg-extras{grid-column:1/-1;display:flex;gap:12px;align-items:center;justify-content:center;margin-top:2px;}
-@media(max-width:640px){
-  .cfg-row{grid-template-columns:1fr;}
-  .cfg-row .delay-wrap,.cfg-row .cg{width:100%;}
-  .cfg-range{width:100%!important;flex:1;}
+/* Config sliders — Clean alignment matching screenshot */
+.cfg-row{display:grid;grid-template-columns:1fr;gap:12px;margin-top:12px;width:100%;max-width:100%;}
+@media(min-width:600px){
+  .cfg-row{grid-template-columns:1fr 1fr;}
 }
-@media(max-width:360px){
-  .cg label{font-size:11px;}
-  .cv{font-size:13px;}
+@media(min-width:900px){
+  .cfg-row{grid-template-columns:repeat(4,1fr);}
 }
-
-.cg{display:flex;align-items:center;gap:5px;}
-.cg label{font-size:10px;color:var(--text3);font-weight:500;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;}
-.cv{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:#f97316;min-width:30px;text-align:center;}
+.cg{display:flex;align-items:center;background:var(--bg2);padding:10px 14px;border-radius:12px;border:1px solid var(--border);width:100%;}
+.cg label{font-size:10px;color:var(--text);font-weight:700;text-transform:uppercase;letter-spacing:.5px;min-width:70px;}
+.cv{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:800;color:#f97316;min-width:36px;text-align:right;}
 .cv.bl{color:#3b82f6;}.cv.gr{color:#22c55e;}.cv.pu{color:#a855f7;}
-.delay-wrap{display:flex;flex-direction:column;gap:1px;}
-.delay-inner{display:flex;align-items:center;gap:5px;}
-.delay-ends{display:flex;justify-content:space-between;padding:0 1px;}
-.dlbl{font-size:9px;font-style:italic;}
-.dlbl.lo{color:#22c55e88;}.dlbl.hi{color:#ef444488;}
-.cfg-range{-webkit-appearance:none;appearance:none;width:72px;height:5px;border-radius:3px;background:rgba(128,128,128,.15);outline:none;cursor:pointer;border:none;padding:0;}
-.cfg-range::-webkit-slider-runnable-track{height:5px;border-radius:3px;background:rgba(128,128,128,.15);}
-.cfg-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:24px;height:24px;border-radius:50%;background:#f97316;cursor:pointer;box-shadow:0 0 6px rgba(249,115,22,.5);margin-top:-9.5px;border:none;}
-.cfg-range.bl::-webkit-slider-thumb{background:#3b82f6;box-shadow:0 0 6px rgba(59,130,246,.5);}
-.cfg-range.gr::-webkit-slider-thumb{background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,.5);}
-.cfg-range.pu::-webkit-slider-thumb{background:#a855f7;box-shadow:0 0 6px rgba(168,85,247,.5);}
-.cfg-range::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:#f97316;cursor:pointer;border:none;}
-.cfg-range.bl::-moz-range-thumb{background:#3b82f6;}.cfg-range.gr::-moz-range-thumb{background:#22c55e;}.cfg-range.pu::-moz-range-thumb{background:#a855f7;}
+
+.delay-wrap{width:100%;}
+.delay-inner{display:flex;align-items:center;background:var(--bg2);padding:10px 14px;border-radius:12px;border:1px solid var(--border);position:relative;margin-bottom:18px;}
+.delay-ends{display:flex;justify-content:space-between;position:absolute;left:14px;right:14px;bottom:-18px;pointer-events:none;}
+.dlbl{font-size:11px;font-style:italic;font-weight:600;}
+.dlbl.lo{color:#22c55e;}.dlbl.hi{color:#ef4444;}
+.delay-inner label{font-size:15px;color:var(--text);font-weight:700;min-width:70px;}
+
+.cfg-range{width:100%!important;flex:1;margin:0 14px;-webkit-appearance:none;appearance:none;height:6px;border-radius:3px;background:rgba(128,128,128,.15);outline:none;cursor:pointer;border:none;}
+.cfg-range::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:rgba(128,128,128,.15);}
+.cfg-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:28px;height:28px;border-radius:50%;background:#f97316;cursor:pointer;box-shadow:0 0 10px rgba(249,115,22,.6);margin-top:-11px;border:none;}
+.cfg-range.bl::-webkit-slider-thumb{background:#3b82f6;box-shadow:0 0 10px rgba(59,130,246,.6);}
+.cfg-range.gr::-webkit-slider-thumb{background:#22c55e;box-shadow:0 0 10px rgba(34,197,94,.6);}
+.cfg-range.pu::-webkit-slider-thumb{background:#a855f7;box-shadow:0 0 10px rgba(168,85,247,.6);}
+.cfg-range::-moz-range-thumb{width:28px;height:28px;border-radius:50%;background:#f97316;cursor:pointer;border:none;box-shadow:0 0 10px rgba(249,115,22,.6);}
+.cfg-range.bl::-moz-range-thumb{background:#3b82f6;box-shadow:0 0 10px rgba(59,130,246,.6);}.cfg-range.gr::-moz-range-thumb{background:#22c55e;box-shadow:0 0 10px rgba(34,197,94,.6);}.cfg-range.pu::-moz-range-thumb{background:#a855f7;box-shadow:0 0 10px rgba(168,85,247,.6);}
 .cfg-range:disabled{opacity:.22;cursor:not-allowed;}
+
+/* Info icon specifically styled like screenshot */
+.cg .info-btn, .delay-inner .info-btn {background:rgba(59,130,246,0.1);color:#3b82f6;border:1px solid rgba(59,130,246,0.4);width:18px;height:18px;font-size:11px;margin-left:0;margin-right:4px;}
+.cg .info-btn:hover, .delay-inner .info-btn:hover {background:#3b82f6;color:#fff;}
+
+/* Active game params row */
+.active-params{display:none;justify-content:center;gap:16px;padding:8px 0;border-top:1px solid var(--border);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;}
+.active-params span{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:11px;color:var(--text);margin-left:4px;}
 .btn-row{display:flex;gap:7px;align-items:center;}
 .btn{font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;border:none;border-radius:8px;padding:9px 18px;cursor:pointer;transition:all .2s;}
 .btn-go{background:#f97316;color:#fff;}.btn-go:hover{background:#ea580c;}
@@ -143,24 +169,25 @@ body:not(.dark) .fog-overlay{background:linear-gradient(to bottom,#1a2a1a 0%,#1a
 /* WELCOME POPUP */
 .wmo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:300;align-items:flex-start;justify-content:center;padding:12px;overflow-y:auto;}
 .wmo.vis{display:flex;}
-.wbox{background:var(--bg2);border:1px solid rgba(249,115,22,.25);border-radius:16px;padding:22px 20px 20px;max-width:440px;width:100%;margin:auto;}
+.wbox{background:var(--bg2);border:1px solid rgba(249,115,22,.25);border-radius:16px;padding:26px 34px 24px;max-width:800px;width:100%;margin:auto;box-shadow:0 10px 40px rgba(0,0,0,0.5);}
 
 /* Lang toggle inside welcome */
 .wlang{display:flex;justify-content:space-between;gap:6px;margin-bottom:14px;align-items:center;}
 
 .wbox h2{font-size:20px;font-weight:800;background:linear-gradient(135deg,#f97316,#ef4444);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:2px;}
 .wver{font-size:11px;color:var(--text3);margin-bottom:14px;}
-.dev-badge{display:inline-flex;align-items:center;gap:5px;background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:11px;color:var(--text2);margin-bottom:14px;}
-.dev-badge span{color:#f97316;font-weight:600;}
+
 .whint{font-size:12px;color:var(--text3);background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.15);border-radius:8px;padding:8px 12px;margin-bottom:14px;text-align:center;}
 .whint strong{color:#f97316;}
 .wsteps{display:flex;flex-direction:column;gap:10px;margin-bottom:16px;}
+@media(min-width: 600px) {
+  .wsteps{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+}
 .wstep{display:flex;gap:12px;align-items:flex-start;background:var(--bg3);border-radius:10px;padding:11px 12px;border:1px solid var(--border);}
 .wsn{width:24px;height:24px;border-radius:50%;background:rgba(249,115,22,.18);color:#f97316;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
 .wst{font-size:14px;color:var(--text2);line-height:1.55;}
 .wst strong{color:var(--text);}
-.wctrl{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
-.wci{background:var(--bg3);border-radius:8px;padding:9px 11px;border:1px solid var(--border);}
+.wst p {margin-top:6px; font-size:13px; color:var(--text3);}
 
 /* Control Selector in Welcome */
 .wmode{display:flex;gap:8px;margin-bottom:18px;background:var(--bg3);padding:6px;border-radius:12px;border:1px solid var(--border);}
@@ -178,10 +205,10 @@ body:not(.dark) .fog-overlay{background:linear-gradient(to bottom,#1a2a1a 0%,#1a
 .expl p:last-child{margin-bottom:0;}
 .expl strong{color:var(--text);}
 
-/* Explanation grid — responsive, BBC-style */
-.ag{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0;}
+/* Explanation grid — side-by-side by default, stacking only on very small screens */
+.ag{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0;}
 @media(max-width:480px){.ag{grid-template-columns:1fr;}}
-.ac{background:var(--bg3);border-radius:9px;padding:11px;border:1px solid var(--border);}
+.ac{background:var(--bg3);border-radius:10px;padding:14px;border:1px solid var(--border);}
 .ac .al{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:4px;}
 .ac .al.gm{color:#3b82f6;}.ac .al.sc{color:#f97316;}
 .ac .at{font-size:12px;color:var(--text2);line-height:1.55;}
@@ -322,24 +349,23 @@ html.fs-l .cfg-range{width:100%!important;flex:1;}
 <!-- WELCOME POPUP -->
 <div class="wmo" id="wmo">
   <div class="wbox">
-<!-- #1 Lang & Theme toggle inside welcome -->
-<div class="wlang">
-  <button class="icon-btn" id="wThemeBtn">☀</button>
-  <div class="fs-sel" id="wFsSel">
+<!-- #1 Single-row header: theme | fs | TITLE+ver | lang -->
+<div class="wlang" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:nowrap;">
+  <button class="icon-btn" id="wThemeBtn" style="flex-shrink:0;">☀</button>
+  <div class="fs-sel" id="wFsSel" style="flex-shrink:0;">
     <button class="fs-btn fs-btn-s fs-active" data-fs="s" title="Small">A</button>
     <button class="fs-btn fs-btn-m" data-fs="m" title="Medium">A</button>
     <button class="fs-btn fs-btn-l" data-fs="l" title="Large">A</button>
   </div>
-  <div style="display:flex;gap:6px;">
+  <div style="flex:1;min-width:0;text-align:center;overflow:hidden;">
+    <div id="wTitle" style="font-size:clamp(13px,3.5vw,20px);font-weight:800;background:linear-gradient(135deg,#f97316,#ef4444);-webkit-background-clip:text;-webkit-text-fill-color:transparent;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;">Steering Delay Simulator</div>
+    <div class="wver" id="wVer" style="margin-bottom:0;">v0.91 — Bullwhip Effect Demo</div>
+  </div>
+  <div style="display:flex;gap:6px;flex-shrink:0;">
     <button class="lang-btn active" id="wBtnEN" title="English">🇬🇧</button>
     <button class="lang-btn" id="wBtnTR" title="Türkçe">🇹🇷</button>
   </div>
 </div>
-    <h2 id="wTitle">Steering Delay Simulator</h2>
-    <div class="wver" id="wVer">v0.9 — Bullwhip Effect Demo</div>
-    <div style="text-align:center;margin-bottom:12px">
-      <div class="dev-badge"><span id="devIcon">📱</span><span id="devTxt">Detecting…</span></div>
-    </div>
     <div class="whint" id="wHint">Tap <strong>?</strong> anytime to reopen this guide.</div>
     <div class="wsteps">
       <div class="wstep"><div class="wsn">1</div><div class="wst" id="ws1"></div></div>
@@ -347,13 +373,8 @@ html.fs-l .cfg-range{width:100%!important;flex:1;}
       <div class="wstep"><div class="wsn">3</div><div class="wst" id="ws3"></div></div>
       <div class="wstep"><div class="wsn">4</div><div class="wst" id="ws4"></div></div>
     </div>
-    <div class="wctrl">
-      <div class="wci"><div class="wcl" id="wcL1"></div><div class="wcv" id="wcV1"></div></div>
-      <div class="wci"><div class="wcl" id="wcL2"></div><div class="wcv" id="wcV2"></div></div>
-      <div class="wci"><div class="wcl" id="wcL3"></div><div class="wcv" id="wcV3"></div></div>
-      <div class="wci"><div class="wcl" id="wcL4"></div><div class="wcv" id="wcV4"></div></div>
-    </div>
-    <div class="wmode">
+    
+    <div class="wmode" style="margin-top:20px;">
       <button class="wmode-btn act" id="wModeMan">👆 Manual</button>
       <button class="wmode-btn" id="wModeGyro">📱 Gyro</button>
     </div>
@@ -378,7 +399,7 @@ html.fs-l .cfg-range{width:100%!important;flex:1;}
       </div>
     </div>
     <div class="hcenter">
-      <h1>Bullwhip Effect Simulator <span class="ver">v0.9</span></h1>
+      <h1>Bullwhip Effect Simulator <span class="ver">v0.91</span></h1>
       <div class="sub" id="hSub">Experience the Bullwhip Effect</div>
     </div>
     <div class="hright">
@@ -399,6 +420,8 @@ html.fs-l .cfg-range{width:100%!important;flex:1;}
   </div>
 
   <div class="game-wrap" id="gameWrap">
+    <button class="btn-corner btn-mute" id="btnMute" style="display:none;">🔊</button>
+    <button class="btn-corner btn-reset" id="btnResetTop" style="display:none;">✕</button>
     <canvas id="gc" width="1200"></canvas>
     <div class="fog-overlay" id="fogOverlay"></div>
     <!-- overlay hidden; play button drawn on canvas -->
@@ -421,40 +444,47 @@ html.fs-l .cfg-range{width:100%!important;flex:1;}
       <button class="steer-btn" id="bR">▶</button>
     </div>
     <div class="cfg-row">
-      <div class="delay-wrap">
-        <div class="delay-inner">
-          <label id="lDelay">Delay</label><span class="info-btn" data-tt="ttDelay">i</span>
-          <input type="range" class="cfg-range" id="sDelay" min="0" max="30" value="30" step="1">
-          <span class="cv" id="dDelay">30</span>
-        </div>
-        <div class="delay-ends">
-          <span class="dlbl lo" id="lDlo">0 = Instant</span>
-          <span class="dlbl hi" id="lDhi">30 = Total Loss</span>
-        </div>
+      <div class="cg">
+        <label id="lDelay" style="width:40px;">Delay</label><span class="info-btn" data-tt="ttDelay">i</span>
+        <input type="range" class="cfg-range" id="sDelay" min="0" max="30" value="30" step="1">
+        <span class="cv" id="dDelay">30</span>
       </div>
       <div class="cg">
-        <label id="lSpeed">Speed</label><span class="info-btn" data-tt="ttSpeed">i</span>
+        <label id="lSpeed" style="width:40px;">Speed</label><span class="info-btn" data-tt="ttSpeed">i</span>
         <input type="range" class="cfg-range bl" id="sSpeed" min="1" max="8" value="8" step="1">
         <span class="cv bl" id="dSpeed">8</span>
       </div>
       <div class="cg">
-        <label id="lDur">Duration</label><span class="info-btn" data-tt="ttDur">i</span>
+        <label id="lDur" style="width:40px;">Durat</label><span class="info-btn" data-tt="ttDur">i</span>
         <input type="range" class="cfg-range gr" id="sDur" min="15" max="60" value="60" step="5">
         <span class="cv gr" id="dDur">60s</span>
       </div>
       <div class="cg">
-        <label id="lHL">Headlight</label><span class="info-btn" data-tt="ttHL">i</span>
+        <label id="lHL" style="width:40px;">Light</label><span class="info-btn" data-tt="ttHL">i</span>
         <input type="range" class="cfg-range pu" id="sFog" min="20" max="100" value="70" step="5">
         <span class="cv pu" id="dFog">70m</span>
       </div>
-      <div class="cfg-extras">
-        <div class="snd-wrap">
-          <input type="checkbox" class="snd-cb" id="sndCb" checked>
-          <label for="sndCb" id="lSound">Sound</label>
-        </div>
-        <button class="btn btn-rs" id="btnRs">Reset</button>
-      </div>
     </div>
+    
+    <div class="active-params">
+      <div id="apDelayLabel">Delay <span id="apDelayVal">30</span></div>
+      <div id="apSpeedLabel">Speed <span id="apSpeedVal">8</span></div>
+      <div id="apDurLabel">Dur <span id="apDurVal">60s</span></div>
+      <div id="apHLLabel">Light <span id="apHLVal">70m</span></div>
+    </div>
+  </div>
+
+  <div class="expl">
+    <h3 id="eTitle">What Is the Bullwhip Effect?</h3>
+    <p id="eP1"></p>
+    <p id="eP2"></p>
+    <div class="ag">
+      <div class="ac"><div class="al gm" id="eGG">In This Game</div><div class="at" id="eGGt"></div></div>
+      <div class="ac"><div class="al sc" id="eGS">In Supply Chains</div><div class="at" id="eGSt"></div></div>
+      <div class="ac"><div class="al gm" id="eFG">The Fix (Game)</div><div class="at" id="eFGt"></div></div>
+      <div class="ac"><div class="al sc" id="eFR">The Fix (Real World)</div><div class="at" id="eFRt"></div></div>
+    </div>
+    <div id="rSec"><h4 id="eHist">Session History</h4><div id="rTxt"></div></div>
   </div>
 
   <!-- Result Modal -->
@@ -536,18 +566,6 @@ html.fs-l .cfg-range{width:100%!important;flex:1;}
     </div>
   </div>
 
-  <div class="expl">
-    <h3 id="eTitle">What Is the Bullwhip Effect?</h3>
-    <p id="eP1"></p>
-    <p id="eP2"></p>
-    <div class="ag">
-      <div class="ac"><div class="al gm" id="eGG">In This Game</div><div class="at" id="eGGt"></div></div>
-      <div class="ac"><div class="al sc" id="eGS">In Supply Chains</div><div class="at" id="eGSt"></div></div>
-      <div class="ac"><div class="al gm" id="eFG">The Fix (Game)</div><div class="at" id="eFGt"></div></div>
-      <div class="ac"><div class="al sc" id="eFR">The Fix (Real World)</div><div class="at" id="eFRt"></div></div>
-    </div>
-    <div id="rSec"><h4 id="eHist">Session History</h4><div id="rTxt"></div></div>
-  </div>
 
   <!-- #4 Footer: single link on the professor's name -->
   <div class="foot">
@@ -635,14 +653,14 @@ var S={
     advSpeed:'<strong>When markets are volatile:</strong> shorter, more frequent ordering cycles outperform large batch orders. Agility beats efficiency in turbulent demand.',
     advGeneral:'<strong>The core lesson:</strong> The Bullwhip Effect is not caused by demand variability — it is caused by <em>delayed visibility</em> of that variability. Eliminate the lag, eliminate the whip.',
     tapResume:'Tap anywhere to resume',
-    wTitle:'Steering Delay Simulator',wVer:'v0.9 — Bullwhip Effect Demo',
+    wTitle:'Steering Delay Simulator',wVer:'v0.91 — Bullwhip Effect Demo',
     wDevM:'Mobile — use slider or ◀ ▶ buttons',
     wDevD:'Desktop — slider, buttons, or ← → / A D keys',
     wHint:'Tap <strong>?</strong> anytime to reopen this guide.',
-    ws1:'<strong>Steer</strong> with the slider, ◀ ▶ step buttons, or arrow keys. The slider holds position — steer back to return to center.',
-    ws2:'Start with <strong>Delay = 0</strong>. Note your on-road %. Replay with Delay 8, then 15. Watch control collapse.',
-    ws3:'The <strong>orange ▼</strong> above the slider shows where your wheels actually point — lagging behind your input. That gap is the Bullwhip Effect.',
-    ws4:'The <strong>dark zone</strong> is fog — unknown future demand. Headlight distance sets your forecast horizon.',
+    ws1:'<strong>Steer</strong> with the slider, arrow keys, or by <strong>tilting your mobile device</strong> (Gyro mode).<br><p>The slider holds position — steer back to return to center.</p>',
+    ws2:'Notice the <strong>Delay is set to 30 (max)</strong> initially.<br><p>Watch your control collapse. Then lower it to 0 and see the difference.</p>',
+    ws3:'The <strong>orange ▼</strong> above the slider shows where your wheels actually point — lagging behind your input.<br><p>That gap is the Bullwhip Effect.</p>',
+    ws4:'The <strong>dark zone</strong> is fog — unknown future demand.<br><p>Headlight distance sets your forecast horizon.</p>',
     wcL1:'Delay',wcV1:'Info lag (0=instant, 15=chaos)',
     wcL2:'Speed',wcV2:'Road scroll speed',
     wcL3:'Duration',wcV3:'Run length (seconds)',
@@ -674,7 +692,7 @@ var S={
     msg0:'Kontrol kaybı. Gecikmeli geri bildirim sürekli salınım — kamçı etkisi.',
     eTitle:'Kamçı Etkisi Nedir?',
     eP1:'Tedarik zincirlerinde <strong>bilgi gecikmeli iletilir</strong>. Perakendedeki küçük bir talep değişikliği yukarıya büyür — her aşama geç görüp aşırı tepki verir. %10 artış fabrikada %40 dalgalanmaya dönüşebilir. Bu <strong>Kamçı Etkisi</strong>\'dir.',
-    eP2:'Bu simülatör bunu <strong>hissettiriir</strong>. Gecikme 0\'da tekerlek anında yanıt verir. Gecikme arttıkça girişiniz geç ulaşır — aşırı düzelirsiniz, salınıma girersiniz. <strong>Gerçek zamanlı görünürlük olmayan tedarik zincirinde olan budur.</strong>',
+    eP2:'Bu simülatör bunu <strong>hissettirir</strong>. Gecikme 0\'da tekerlek anında yanıt verir. Gecikme arttıkça girişiniz geç ulaşır — aşırı düzelirsiniz, salınıma girersiniz. <strong>Gerçek zamanlı görünürlük olmayan tedarik zincirinde olan budur.</strong>',
     eGG:'Bu Oyunda',eGGt:'Direksiyon → yanıt geç → aşırı düzeltme → ihlaller',
     eGS:'Tedarik Zincirinde',eGSt:'Talep değişir → bilgi geç → fazla sipariş → kaos',
     eFG:'Çözüm (Oyun)',eFGt:'Gecikme 0 + tam far = akıcı kontrol, %100 yolda',
@@ -723,14 +741,14 @@ var S={
     advSpeed:'<strong>Piyasalar dalgalı olduğunda:</strong> daha kısa ve sık sipariş döngüleri büyük toplu siparişlerden daha iyi performans gösterir. Çalkantılı talepte çeviklik verimliliği yener.',
     advGeneral:'<strong>Temel ders:</strong> Kamçı Etkisi talep değişkenliğinden kaynaklanmaz — değişkenliğin <em>gecikmeli görünürlüğünden</em> kaynaklanır. Gecikmeyi ortadan kaldırın, kamçıyı ortadan kaldırın.',
     tapResume:'Devam etmek için dokunun',
-    wTitle:'Direksiyon Gecikmesi Simülatörü',wVer:'v0.9 — Kamçı Etkisi Demosu',
+    wTitle:'Direksiyon Gecikmesi Simülatörü',wVer:'v0.91 — Kamçı Etkisi Demosu',
     wDevM:'Mobil — kaydırıcı veya ◀ ▶ düğmelerini kullanın',
     wDevD:'Masaüstü — kaydırıcı, düğme veya ← → / A D tuşları',
     wHint:'<strong>?</strong> düğmesine (sağ üst) basarak bu kılavuzu açabilirsiniz.',
-    ws1:'<strong>Direksiyon</strong> için kaydırıcıyı, ◀ ▶ düğmelerini veya ok tuşlarını kullanın. Kaydırıcı yerinde kalır.',
-    ws2:'<strong>Gecikme = 0</strong> ile başlayın. %\'nizi not edin. Gecikme 8, sonra 15 ile tekrarlayın.',
-    ws3:'Kaydırıcının üzerindeki <strong>turuncu ▼</strong> tekerleğin gerçekte nereye baktığını gösterir — Kamçı Etkisi budur.',
-    ws4:'<strong>Karanlık bölge</strong> sisdir — bilinmeyen gelecek talebi. Far mesafesi tahmin ufkunu ayarlar.',
+    ws1:'<strong>Direksiyon</strong> için kaydırıcıyı, ok tuşlarını veya <strong>mobil cihazınızı eğerek</strong> (Jiroskop) kullanın.<br><p>Kaydırıcı yerinde kalır — merkeze dönmek için geri yönlendirin.</p>',
+    ws2:'Başlangıçta <strong>Gecikmenin 30 (maksimum)</strong> olduğuna dikkat edin.<br><p>Kontrolünüzün nasıl kaybolduğunu izleyin. Sonra 0\'a düşürün ve farkı görün.</p>',
+    ws3:'Kaydırıcının üzerindeki <strong>turuncu ▼</strong> tekerleği gerçekte nereye baktığını gösterir — girişinizin gerisinde kalır.<br><p>O boşluk Kamçı Etkisidir.</p>',
+    ws4:'<strong>Karanlık bölge</strong> sisdir — bilinmeyen gelecek talebi.<br><p>Far mesafesi tahmin ufkunu ayarlar.</p>',
     wcL1:'Gecikme',wcV1:'Bilgi gecikmesi (0=anında, 15=kaos)',
     wcL2:'Hız',wcV2:'Yolun hareket hızı',
     wcL3:'Süre',wcV3:'Tur süresi (saniye)',
@@ -769,8 +787,6 @@ var sDelay      = $id('sDelay');
 var sSpeed      = $id('sSpeed');
 var sDur        = $id('sDur');
 var sFog        = $id('sFog');
-var sndCb       = $id('sndCb');
-var btnRs       = $id('btnRs');
 var sTime       = $id('sTime');
 var sRoad       = $id('sRoad');
 var sViol       = $id('sViol');
@@ -781,6 +797,19 @@ var bR          = $id('bR');
 var fogOverlay  = $id('fogOverlay');
 var mo          = $id('mo');
 var wmo         = $id('wmo');
+
+var btnMute     = $id('btnMute');
+var btnResetTop = $id('btnResetTop');
+
+var apDelayVal  = $id('apDelayVal');
+var apSpeedVal  = $id('apSpeedVal');
+var apDurVal    = $id('apDurVal');
+var apHLVal     = $id('apHLVal');
+
+var apDelayLabel= $id('apDelayLabel');
+var apSpeedLabel= $id('apSpeedLabel');
+var apDurLabel  = $id('apDurLabel');
+var apHLLabel   = $id('apHLLabel');
 
 // Gyro state
 var gyroActive = false;
@@ -797,6 +826,7 @@ function toggleTheme(){
   $id('wThemeBtn').textContent = icon;
   $id('chThemeBtn').textContent = icon;
   updateFogOverlay();
+  var mc=document.querySelector('meta[name="theme-color"]'); if(mc) mc.content=isDark?'#0a0a0f':'#f2f1ed';
   if(!G.running) drawStatic();
   try{ localStorage.setItem('bw_theme', isDark ? 'dark' : 'light'); }catch(e){}
 }
@@ -873,35 +903,40 @@ function setLang(l){
   try{ localStorage.setItem('bw_lang', l); }catch(e){}
 }
 
+function safeSet(id,val,html){var el=document.getElementById(id);if(!el)return;if(html)el.innerHTML=val;else el.textContent=val;}
 function applyText(){
-  $id('hSub').textContent   = t('hSub');
-  $id('lTime').textContent  = t('lTime');
-  $id('lRoad').textContent  = t('lRoad');
-  $id('lViol').textContent  = t('lViol');
-  $id('lStatus').textContent= t('lStatus');
-  $id('lDelay').textContent = t('lDelay');
-  $id('lSpeed').textContent = t('lSpeed');
-  $id('lDur').textContent   = t('lDur');
-  $id('lHL').textContent    = t('lHL');
-  $id('lSound').textContent = t('lSound');
-  $id('lDlo').textContent   = t('lDlo');
-  $id('lDhi').textContent   = t('lDhi');
-  btnRs.textContent         = t('btnRs');
-  $id('mCh').textContent    = t('mCh');
+  safeSet('hSub',   t('hSub'));
+  safeSet('lTime',  t('lTime'));
+  safeSet('lRoad',  t('lRoad'));
+  safeSet('lViol',  t('lViol'));
+  safeSet('lStatus',t('lStatus'));
+  safeSet('lDelay', t('lDelay'));
+  safeSet('lSpeed', t('lSpeed'));
+  safeSet('lDur',   t('lDur'));
+  safeSet('lHL',    t('lHL'));
+  safeSet('lSound', t('lSound'));
+  safeSet('mCh',    t('mCh'));
   if(!G.running) sStat.textContent = t('stReady');
-  $id('mTitle').textContent = t('mTitle');
-  $id('mLOn').textContent   = t('mLOn');
-  $id('mLOff').textContent  = t('mLOff');
-  $id('mLVio').textContent  = t('mLVio');
-  $id('mLDel').textContent  = t('mLDel');
-  $id('eTitle').textContent = t('eTitle');
-  $id('eP1').innerHTML      = t('eP1');
-  $id('eP2').innerHTML      = t('eP2');
-  $id('eGG').textContent    = t('eGG');  $id('eGGt').textContent = t('eGGt');
-  $id('eGS').textContent    = t('eGS');  $id('eGSt').textContent = t('eGSt');
-  $id('eFG').textContent    = t('eFG');  $id('eFGt').textContent = t('eFGt');
-  $id('eFR').textContent    = t('eFR');  $id('eFRt').textContent = t('eFRt');
-  $id('eHist').textContent  = t('eHist');
+  safeSet('mTitle', t('mTitle'));
+  safeSet('mLOn',   t('mLOn'));
+  safeSet('mLOff',  t('mLOff'));
+  safeSet('mLVio',  t('mLVio'));
+  safeSet('mLDel',  t('mLDel'));
+  safeSet('eTitle', t('eTitle'));
+  safeSet('eP1',    t('eP1'), true);
+  safeSet('eP2',    t('eP2'), true);
+  safeSet('eGG',    t('eGG'));   safeSet('eGGt', t('eGGt'));
+  safeSet('eGS',    t('eGS'));   safeSet('eGSt', t('eGSt'));
+  safeSet('eFG',    t('eFG'));   safeSet('eFGt', t('eFGt'));
+  safeSet('eFR',    t('eFR'));   safeSet('eFRt', t('eFRt'));
+  safeSet('eHist',  t('eHist'));
+  
+  if(apDelayLabel){
+    apDelayLabel.childNodes[0].nodeValue = t('lDelay') + " ";
+    apSpeedLabel.childNodes[0].nodeValue = t('lSpeed') + " ";
+    apDurLabel.childNodes[0].nodeValue = t('lDur') + " ";
+    apHLLabel.childNodes[0].nodeValue = t('lHL') + " ";
+  }
   applyWelcomeText();
   // redraw static so canvas play button text updates
   if(!G.running) drawStatic();
@@ -920,18 +955,27 @@ function resizeCanvas(expand){
   var vh = window.innerHeight;
   var vw = window.innerWidth;
   var targetPx;
-  if(!canvasExpanded){
-    targetPx = isMobile ? 160 : 200;
-  } else if(isMobile){
-    targetPx = Math.round(Math.max(280, Math.min(vh*0.72, 520)));
+  if(G.running){
+    // In playing mode CSS flex fills the space — do NOT set canvas.style.height here.
+    // Read the actual rendered height from the game-wrap container.
+    canvas.style.height = '';
+    var wrapH = document.getElementById('gameWrap').clientHeight || (vh - 120);
+    targetPx = wrapH;
+    CH = Math.round(targetPx * (CW / Math.max(1, vw)));
   } else {
-    targetPx = Math.round(Math.max(340, Math.min(vh*0.60, 600)));
+    canvas.style.height = 'auto'; // Reset for welcome screen
+    if(!canvasExpanded){
+      targetPx = isMobile ? 160 : 200;
+    } else if(isMobile){
+      targetPx = Math.round(Math.max(280, Math.min(vh*0.72, 520)));
+    } else {
+      targetPx = Math.round(Math.max(340, Math.min(vh*0.60, 600)));
+    }
+    var containerW = canvas.offsetWidth;
+    if(containerW === 0) containerW = Math.min(1200, vw - 20); 
+    CH = Math.round(targetPx * (CW / Math.max(1, containerW)));
+    CH = Math.max(250, CH);
   }
-  // FIX: If canvas.offsetWidth is 0 (because it is hidden behind a display:none or a fully overlaying flexbox), fallback to `vw - 20` (accounting for app padding).
-  var containerW = canvas.offsetWidth;
-  if(containerW === 0) containerW = Math.min(1200, vw - 20); 
-  CH = Math.round(targetPx * (CW / Math.max(1, containerW)));
-  CH = Math.max(250, CH);
   canvas.height = CH;
   updateFogOverlay();
   if(!G.running) drawStatic();
@@ -952,15 +996,17 @@ sFog.addEventListener('input', function(){ $id('dFog').textContent=sFog.value+'m
 // ═══════════════════════════════════════════════════════════════
 // AUDIO
 // ═══════════════════════════════════════════════════════════════
+var soundEnabled = true;
+
 var audio={
   ctx:null,warnOsc:null,warnGain:null,warnLfo:null,warnOn:false,engOsc:null, engGain:null, engOn:false,
   init:function(){ if(this.ctx) return; try{ this.ctx=new(window.AudioContext||window.webkitAudioContext)(); }catch(e){} },
   beep:function(){
-    if(!sndCb.checked||!this.ctx) return;
+    if(!soundEnabled||!this.ctx) return;
     try{ var o=this.ctx.createOscillator(),g=this.ctx.createGain(); o.type='sawtooth'; o.frequency.value=800; g.gain.value=0.15; g.gain.exponentialRampToValueAtTime(0.001,this.ctx.currentTime+0.2); o.connect(g); g.connect(this.ctx.destination); o.start(); o.stop(this.ctx.currentTime+0.2); }catch(e){}
   },
   startWarn:function(){
-    if(this.warnOn||!sndCb.checked||!this.ctx) return;
+    if(this.warnOn||!soundEnabled||!this.ctx) return;
     try{ this.warnOsc=this.ctx.createOscillator(); this.warnGain=this.ctx.createGain(); this.warnLfo=this.ctx.createOscillator(); var lG=this.ctx.createGain(); this.warnOsc.type='square'; this.warnOsc.frequency.value=220; this.warnGain.gain.value=0.06; this.warnLfo.frequency.value=8; lG.gain.value=0.06; this.warnLfo.connect(lG); lG.connect(this.warnGain.gain); this.warnLfo.start(); this.warnOsc.connect(this.warnGain); this.warnGain.connect(this.ctx.destination); this.warnOsc.start(); this.warnOn=true; }catch(e){}
   },
   stopWarn:function(){
@@ -971,13 +1017,13 @@ var audio={
   // Tick-based engine: repeating click sounds — faster speed = higher pitch + rate
   tickSpeed:1, tickRunning:false, tickTimer:null,
   startEngine:function(){
-    if(this.tickRunning||!sndCb.checked||!this.ctx) return;
+    if(this.tickRunning||!soundEnabled||!this.ctx) return;
     this.tickRunning=true; this._doTick();
   },
   _doTick:function(){
     if(!this.tickRunning) return;
     var self=this;
-    if(sndCb.checked && self.ctx){
+    if(soundEnabled && self.ctx){
       try{
         var o=self.ctx.createOscillator(), g=self.ctx.createGain();
         // Tone frequency: 50Hz (slow=deep rumble) → 200Hz (fast=high purr)
@@ -1000,7 +1046,7 @@ var audio={
     if(this.tickTimer){ clearTimeout(this.tickTimer); this.tickTimer=null; }
   },
   screech:function(){
-    if(!sndCb.checked||!this.ctx) return;
+    if(!soundEnabled||!this.ctx) return;
     try{ var o=this.ctx.createOscillator(),g=this.ctx.createGain(); o.type='triangle'; o.frequency.value=1200; o.frequency.exponentialRampToValueAtTime(600,this.ctx.currentTime+0.2); g.gain.value=0.1; g.gain.exponentialRampToValueAtTime(0.001,this.ctx.currentTime+0.2); o.connect(g); g.connect(this.ctx.destination); o.start(); o.stop(this.ctx.currentTime+0.2); }catch(e){}
   }
 };
@@ -1032,7 +1078,8 @@ var G={
   viscousSteer:0, steerVelocity:0, actualSteer:0, steerQueue:[], sliderActive:false,
   totalFrames:0, onFrames:0, violations:0, wasOff:false, isOff:false, carOff:false,
   pathTrace:[], skidMarks:[], lastTS:0,
-  road:[], hazards:[], results:[]
+  road:[], hazards:[], results:[],
+  rafId:0
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -1098,9 +1145,26 @@ function genRoad(){
 function startGame(){
   if(G.running) return; audio.init();
   mo.classList.remove('vis');
+  document.body.classList.add('playing');
+  
+  btnMute.style.display = 'flex';
+  btnResetTop.style.display = 'flex';
+  
   if(typeof chartMo !== 'undefined') chartMo.classList.remove('vis');
   wmo.classList.remove('vis');
+  
   G.delay=parseInt(sDelay.value); G.baseSpeed=parseInt(sSpeed.value); G.gameDur=parseInt(sDur.value);
+  
+  // Set the active param text labels
+  apDelayVal.textContent = G.delay;
+  apSpeedVal.textContent = G.baseSpeed;
+  apDurVal.textContent = G.gameDur + 's';
+  apHLVal.textContent = sFog.value + 'm';
+  
+  // Let the browser complete layout (flex sizing) before reading dimensions
+  requestAnimationFrame(function(){
+    resizeCanvas(true);
+  });
   G.running=true; G.paused=false; G.gameTime=0; G.carX=0; G.scrollY=0;
   if(!gyroActive) G.sliderPos=0;
   G.smoothedInput=0; G.inputSteer=0; G.viscousSteer=0; G.steerVelocity=0; G.actualSteer=0;
@@ -1110,11 +1174,15 @@ function startGame(){
   sStat.textContent=t('stDriving');
   sDelay.disabled=true; sSpeed.disabled=true; sDur.disabled=true; sFog.disabled=true;
   for(var i=0;i<G.delay;i++) G.steerQueue.push(0);
-  genRoad(); audio.startEngine(); audio.updateEngine(G.baseSpeed); requestAnimationFrame(loop);
+  genRoad(); audio.startEngine(); audio.updateEngine(G.baseSpeed); G.rafId=requestAnimationFrame(loop);
 }
 
 function resetGame(){
+  document.body.classList.remove('playing');
+  btnMute.style.display = 'none';
+  btnResetTop.style.display = 'none';
   G.running=false; G.paused=false; audio.stopWarn(); audio.stopEngine();
+  if(G.rafId){ cancelAnimationFrame(G.rafId); G.rafId=0; }
   G.gameTime=0; G.carX=0; G.scrollY=0; G.sliderPos=0;
   G.smoothedInput=0; G.inputSteer=0; G.viscousSteer=0; G.steerVelocity=0;
   G.actualSteer=0; G.steerQueue=[]; G.totalFrames=0; G.onFrames=0; G.violations=0;
@@ -1126,11 +1194,16 @@ function resetGame(){
   sViol.textContent='0'; pFill.style.width='0%';
   if(!gyroActive) steerSlider.value=0;
   if(!gyroActive) actTri.style.left='50%';
+  resizeCanvas(true);
   drawStatic();
 }
 
 function endGame(){
+  document.body.classList.remove('playing');
+  btnMute.style.display = 'none';
+  btnResetTop.style.display = 'none';
   G.running=false; audio.stopWarn(); audio.stopEngine();
+  resizeCanvas(true);
   var pct=G.totalFrames>0?(G.onFrames/G.totalFrames*100):100;
   G.results.push({dly:G.delay,spd:G.baseSpeed,dur:G.gameDur,fog:parseInt(sFog.value),on:pct,vio:G.violations});
   $id('mOn').textContent=pct.toFixed(1)+'%'; $id('mOff').textContent=(100-pct).toFixed(1)+'%';
@@ -1174,7 +1247,7 @@ function loop(ts){
     audio.stopEngine(); audio.stopWarn();
     draw();
     drawPausedOverlay();
-    requestAnimationFrame(loop);
+    // Don't schedule next frame — resume will restart the loop
     return;
   }
   if(!G.lastTS) G.lastTS=ts;
@@ -1268,6 +1341,7 @@ function loop(ts){
     G.onFrames++; G.wasOff=false;
   }
   G.pathTrace.push({worldSeg:carWorldSeg,x:G.carX,isOff:G.isOff});
+  if(G.pathTrace.length>5000) G.pathTrace.shift();
 
   var pct=G.totalFrames>0?(G.onFrames/G.totalFrames*100):100;
   sRoad.textContent=pct.toFixed(0)+'%';
@@ -1275,7 +1349,7 @@ function loop(ts){
   sViol.textContent=G.violations;
   actTri.style.left=(50+(G.actualSteer/SP)*45)+'%';
   draw();
-  requestAnimationFrame(loop);
+  G.rafId=requestAnimationFrame(loop);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1360,63 +1434,6 @@ function draw(){
   }
   if(G.carOff&&G.running){ ctx.fillStyle='rgba(239,68,68,0.07)'; ctx.fillRect(0,0,CW,CH); }
 }
-
-/*
-function drawPathOscillationChart() {
-  // Draw an oscillation chart on the canvas showing lateral deviation
-  ctx.fillStyle = isDark ? 'rgba(14,27,14,0.95)' : 'rgba(240,245,240,0.95)';
-  ctx.fillRect(0, 0, CW, CH);
-  
-  var pad = 40;
-  var w = CW - pad*2;
-  var h = CH - pad*2;
-  
-  ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(pad, pad + h/2);
-  ctx.lineTo(pad + w, pad + h/2);
-  ctx.stroke();
-  
-  ctx.fillStyle = isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)';
-  ctx.font = '12px Outfit,sans-serif';
-  ctx.textAlign = 'left';
-  ctx.fillText(t('chartTitle') || 'Path Oscillation (Bullwhip Effect)', pad, pad - 10);
-  ctx.fillText('0s', pad, pad + h + 15);
-  ctx.textAlign = 'right';
-  ctx.fillText(G.gameDur + 's', pad + w, pad + h + 15);
-  
-  if(G.pathTrace.length < 2) return;
-  
-  // Plot road center
-  ctx.beginPath();
-  for(var i=0; i<G.pathTrace.length; i++){
-    var pt = G.pathTrace[i];
-    var px = pad + (i / (G.pathTrace.length-1)) * w;
-    var rx = 0;
-    if(pt.worldSeg >= 0 && pt.worldSeg < G.road.length) rx = G.road[pt.worldSeg].ox;
-    var py = pad + h/2 + (rx / (RBW * 1.5)) * (h/2);
-    if(i===0) ctx.moveTo(px, py);
-    else ctx.lineTo(px, py);
-  }
-  ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.3)';
-  ctx.lineWidth = 2;
-  ctx.stroke();
-
-  // Plot car path
-  ctx.beginPath();
-  for(var i=0; i<G.pathTrace.length; i++){
-    var pt = G.pathTrace[i];
-    var px = pad + (i / (G.pathTrace.length-1)) * w;
-    var py = pad + h/2 + (pt.x / (RBW * 1.5)) * (h/2);
-    if(i===0) ctx.moveTo(px, py);
-    else ctx.lineTo(px, py);
-  }
-  ctx.strokeStyle = '#f97316';
-  ctx.lineWidth = 3;
-  ctx.stroke();
-}
-*/
 
 function drawPausedOverlay() {
   ctx.fillStyle = 'rgba(0,0,0,0.5)';
@@ -1505,8 +1522,8 @@ function drawStatic(){
 function canvasHitTest(e){
   if(G.running){
     G.paused = !G.paused;
-    if(G.paused) audio.stopWarn();
-    else G.lastTS = 0; // Prevent huge delta jump on resume
+    if(G.paused) { audio.stopWarn(); audio.stopEngine(); }
+    else { G.lastTS = 0; G.rafId=requestAnimationFrame(loop); } // Restart loop on resume
     return;
   }
   // Click anywhere starts the game
@@ -1764,7 +1781,7 @@ function showChart(){
     '<div class="ch-param"><div class="ch-param-label">'+t('pDelay')+'</div><div class="ch-param-val '+dLvl.cls+'">'+t(dLvl.key)+'</div><div class="ch-param-desc">'+delayReal+'<br><small style="opacity:.6">'+t('pDelayDesc')+'</small></div></div>'+
     '<div class="ch-param"><div class="ch-param-label">'+t('pSpeed')+'</div><div class="ch-param-val '+sLvl.cls+'">'+t(sLvl.key)+'</div><div class="ch-param-desc">'+speedReal+'<br><small style="opacity:.6">'+t('pSpeedDesc')+'</small></div></div>'+
     '<div class="ch-param"><div class="ch-param-label">'+t('pHeadlight')+'</div><div class="ch-param-val '+hLvl.cls+'">'+forecastWeeks+(lang==='tr'?' hafta':' wks')+'</div><div class="ch-param-desc">'+headlightReal+'<br><small style="opacity:.6">'+t('pHeadlightDesc')+'</small></div></div>'+
-    '<div class="ch-param"><div class="ch-param-label">'+t('pDuration')+'</div><div class="ch-param-val md">'+durationReal+'</div><div class="ch-param-desc">'+(lang==='tr'?'Oyun süresi: ':'Game time: ')+G.gameDur+'s<br><small style="opacity:.6">'+t('pDurationDesc')+'</small></div></div>';
+    '<div class="ch-param"><div class="ch-param-label">'+t('pDuration')+'</div><div class="ch-param-val gr">'+durationReal+'</div><div class="ch-param-desc">'+(lang==='tr'?'Oyun süresi: ':'Game time: ')+G.gameDur+'s<br><small style="opacity:.6">'+t('pDurationDesc')+'</small></div></div>';
 
   // ═══ FINANCIAL OUTCOME ═══
   // Revenue: base $1M for duration, reduced by off-road time
@@ -1776,11 +1793,11 @@ function showChart(){
   var netProfit=baseRevenue-overCost-underCost;
 
   var finIcon, finClass, finHeadline, finDetail;
-  if(onPct>=92){
+  if(netProfit>=800000){
     finIcon=t('finProfitIcon'); finClass='profit';
     finHeadline=t('finProfit');
     finDetail=t('finProfitDetail');
-  } else if(onPct>=60){
+  } else if(netProfit>=600000){
     finIcon=t('finLossIcon'); finClass='loss';
     finHeadline=t('finModerate');
     finDetail=t('finModerateDetail').replace('{over}',overCost.toLocaleString()).replace('{under}',underCost.toLocaleString());
@@ -1890,7 +1907,7 @@ wModeGyro.addEventListener('click', function() {
           wModeMan.click();
         }
       })
-      .catch(function(console) { 
+      .catch(function(err) { 
         alert(t('gyroErr')); 
         wModeMan.click();
       });
@@ -1936,7 +1953,26 @@ $id('wBtnTR').addEventListener('click', function(){ setLang('tr'); });
 $id('chBtnEN').addEventListener('click', function(){ setLang('en'); });
 $id('chBtnTR').addEventListener('click', function(){ setLang('tr'); });
 $id('wDismiss').addEventListener('click', dismissWelcome);
-btnRs.addEventListener('click', resetGame);
+btnResetTop.addEventListener('click', resetGame);
+
+btnMute.addEventListener('click', function(e) {
+  e.stopPropagation();
+  soundEnabled = !soundEnabled;
+  if(!soundEnabled) {
+    audio.stopEngine();
+    audio.stopWarn();
+    btnMute.textContent = '🔇';
+    btnMute.classList.add('muted');
+  } else {
+    btnMute.textContent = '🔊';
+    btnMute.classList.remove('muted');
+    if(G.running && !G.paused) {
+      audio.startEngine();
+      if(G.isOff) audio.startWarn();
+    }
+  }
+});
+
 $id('mCh').addEventListener('click', function(){ showChart(); });
 $id('chClose').addEventListener('click', hideChart);
 $id('chCloseBottom').addEventListener('click', function(){ hideChart(); });
@@ -1974,8 +2010,28 @@ function exportLearnings(){
   if(!lastRun) return;
 
   var onPct=lastRun.on;
-  var fateKey=onPct>=92?'fateProfit':onPct>=60?'fateLoss':'fateBankrupt';
-  var fateEmoji=onPct>=92?'🏆':onPct>=60?'📉':'💀';
+  // Calculate Financials early for badge
+  var raw=G.pathTrace;
+  var step=Math.max(1,Math.floor(raw.length/800));
+  var N_pts=0, overFrames=0, underFrames=0;
+  for(var i=0;i<raw.length;i+=step){
+    var pt=raw[i];
+    var seg=(pt.worldSeg>=0 && pt.worldSeg<G.road.length)?G.road[pt.worldSeg]:null;
+    N_pts++;
+    if(pt.isOff && seg){
+      if(pt.x > seg.ox) overFrames++;
+      else underFrames++;
+    }
+  }
+  var baseRevenue=1000000;
+  var overPct=overFrames/Math.max(1,N_pts);
+  var underPct=underFrames/Math.max(1,N_pts);
+  var overCost=Math.round(overPct*baseRevenue*0.6);
+  var underCost=Math.round(underPct*baseRevenue*1.2);
+  var netProfit=baseRevenue-overCost-underCost;
+
+  var fateKey=netProfit>=800000?'fateProfit':netProfit>=600000?'fateLoss':'fateBankrupt';
+  var fateEmoji=netProfit>=800000?'🏆':netProfit>=600000?'📉':'💀';
 
   // Amplification
   var demRMS=0,actRMS=0;
@@ -2005,31 +2061,10 @@ function exportLearnings(){
   var isEN=lang==='en';
   var curr=lang==='tr'?'₺':'$';
 
-  // Calculate Financials (same logic as showChart)
-  var raw=G.pathTrace;
-  var step=Math.max(1,Math.floor(raw.length/800));
-  var N_pts=0, overFrames=0, underFrames=0;
-  for(var i=0;i<raw.length;i+=step){
-    var pt=raw[i];
-    var seg=(pt.worldSeg>=0 && pt.worldSeg<G.road.length)?G.road[pt.worldSeg]:null;
-    N_pts++;
-    if(pt.isOff && seg){
-      if(pt.x > seg.ox) overFrames++;
-      else underFrames++;
-    }
-  }
-  var baseRevenue=1000000;
-  var overPct=overFrames/Math.max(1,N_pts);
-  var underPct=underFrames/Math.max(1,N_pts);
-  var overCost=Math.round(overPct*baseRevenue*0.6);
-  var underCost=Math.round(underPct*baseRevenue*1.2);
-  var netProfit=baseRevenue-overCost-underCost;
-
   // Format currency
   function fmtMny(v) { return curr+v.toLocaleString(); }
   var profitColor = netProfit>=0?'#22c55e':'#ef4444';
-
-  var fateColor = onPct>=92?'#22c55e':onPct>=60?'#d35400':'#c0392b';
+  var fateColor = netProfit>=800000?'#22c55e':netProfit>=600000?'#d35400':'#c0392b';
 
   var adviceHtml = '';
   if(G.delay>2) adviceHtml+='<div style="margin-bottom:2px">'+t('advDelay')+'</div>';
@@ -2142,23 +2177,19 @@ function exportLearnings(){
 // INPUT
 // ═══════════════════════════════════════════════════════════════
 function applyWelcomeText(){
-  $id('wTitle').textContent  = t('wTitle');
-  $id('wVer').textContent    = t('wVer');
-  $id('devIcon').textContent = isMobile?'📱':'🖥️';
-  $id('devTxt').textContent  = isMobile?t('wDevM'):t('wDevD');
-  $id('wHint').innerHTML     = t('wHint');
-  $id('ws1').innerHTML=t('ws1'); $id('ws2').innerHTML=t('ws2');
-  $id('ws3').innerHTML=t('ws3'); $id('ws4').innerHTML=t('ws4');
-  $id('wcL1').textContent=t('wcL1'); $id('wcV1').textContent=t('wcV1');
-  $id('wcL2').textContent=t('wcL2'); $id('wcV2').textContent=t('wcV2');
-  $id('wcL3').textContent=t('wcL3'); $id('wcV3').textContent=t('wcV3');
-  $id('wcL4').textContent=t('wcL4'); $id('wcV4').textContent=t('wcV4');
-  $id('wModeMan').textContent=t('wModeMan');
-  $id('wModeGyro').textContent=t('wModeGyro');
-  $id('wDismiss').textContent=t('wDismiss');
+  safeSet('wTitle', t('wTitle'));
+  safeSet('wVer',   t('wVer'));
+  safeSet('wHint', t('wHint'), true);
+  safeSet('ws1', t('ws1'), true); safeSet('ws2', t('ws2'), true);
+  safeSet('ws3', t('ws3'), true); safeSet('ws4', t('ws4'), true);
+  safeSet('wModeMan', t('wModeMan'));
+  safeSet('wModeGyro', t('wModeGyro'));
+  safeSet('wDismiss', t('wDismiss'));
   // sync welcome lang toggle buttons
-  $id('wBtnEN').classList.toggle('active', lang==='en');
-  $id('wBtnTR').classList.toggle('active', lang==='tr');
+  var btnEN = document.getElementById('wBtnEN');
+  var btnTR = document.getElementById('wBtnTR');
+  if(btnEN) btnEN.classList.toggle('active', lang==='en');
+  if(btnTR) btnTR.classList.toggle('active', lang==='tr');
 }
 
 function showWelcome(){ wmo.classList.add('vis'); applyWelcomeText(); }
