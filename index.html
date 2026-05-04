@@ -32,7 +32,7 @@ body{background:var(--bg);color:var(--text);font-family:'Outfit',sans-serif;over
 .hcenter{text-align:center;flex:1;min-width:0;}
 .hcenter h1{font-size:clamp(15px,4vw,22px);font-weight:800;background:linear-gradient(135deg,#f97316,#ef4444,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.2;margin-bottom:1px;}
 .hcenter .sub{font-size:clamp(10px,2.2vw,12px);color:var(--text3);font-weight:300;}
-.ver{font-size:9px;font-weight:600;color:#f97316;opacity:.6;margin-left:3px;vertical-align:middle;}
+.ver{font-size:11px;font-weight:600;color:#f97316;opacity:.6;margin-left:3px;vertical-align:middle;}
 .hleft,.hright{display:flex;align-items:center;gap:5px;flex-shrink:0;}
 .icon-btn{background:none;border:1px solid var(--border2);border-radius:20px;padding:4px 8px;cursor:pointer;font-size:13px;color:var(--text2);transition:all .2s;white-space:nowrap;}
 .icon-btn:hover{border-color:#f97316;color:#f97316;}
@@ -85,9 +85,59 @@ body:not(.dark) .fog-overlay{background:linear-gradient(to bottom,#1a2a1a 0%,#1a
 
 /* CONTROL PANEL */
 .cpanel{background:var(--bg3);border:1px solid var(--border);border-top:none;border-radius:0 0 12px 12px;padding:6px 6px 8px;margin-bottom:8px;}
-.tri-wrap{position:relative;width:100%;height:14px;margin-bottom:3px;}
-.tri-center{position:absolute;left:50%;top:0;width:1px;height:100%;background:rgba(128,128,128,.1);transform:translateX(-50%);}
-.tri{position:absolute;top:1px;left:50%;width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:11px solid #f97316;transform:translateX(-50%);filter:drop-shadow(0 0 4px rgba(249,115,22,.7));transition:left .04s;}
+/* Steering triangle indicator — THIS IS THE HEART OF THE VISUALIZATION.
+   It shows where the wheels ACTUALLY point (after delay) vs where the
+   slider is pointing. The gap between these two = the Bullwhip Effect made
+   visible. So we make it LARGE, GLOWING, and PULSING when it's misaligned. */
+.tri-wrap{position:relative;width:100%;height:30px;margin-top:14px;margin-bottom:6px;}
+.tri-center{position:absolute;left:50%;top:0;width:2px;height:100%;background:rgba(128,128,128,.25);transform:translateX(-50%);}
+.tri{
+  position:absolute;
+  top:2px;
+  left:50%;
+  width:0;height:0;
+  /* The triangle itself — orange, big, pointed down at the slider */
+  border-left:14px solid transparent;
+  border-right:14px solid transparent;
+  border-top:24px solid #f97316;
+  transform:translateX(-50%);
+  /* Strong glow makes it impossible to miss */
+  filter:
+    drop-shadow(0 0 6px rgba(249,115,22,1))
+    drop-shadow(0 0 12px rgba(249,115,22,.7))
+    drop-shadow(0 0 18px rgba(239,68,68,.4));
+  transition:left .04s;
+  /* Constant subtle pulse to keep the eye on it during play */
+  animation:tri-pulse 1.4s ease-in-out infinite;
+  z-index:5;
+}
+@keyframes tri-pulse{
+  0%,100%{ filter:
+    drop-shadow(0 0 6px rgba(249,115,22,1))
+    drop-shadow(0 0 12px rgba(249,115,22,.7))
+    drop-shadow(0 0 18px rgba(239,68,68,.4)); }
+  50%   { filter:
+    drop-shadow(0 0 10px rgba(249,115,22,1))
+    drop-shadow(0 0 22px rgba(249,115,22,.95))
+    drop-shadow(0 0 32px rgba(239,68,68,.7)); }
+}
+/* "WHEELS" label above the triangle so users know what it represents.
+   The slider underneath is obviously the input, so we only label the wheels. */
+.tri-wrap::before{
+  content:'⬇ WHEELS (delayed)';
+  position:absolute;
+  top:-13px;
+  left:50%;
+  transform:translateX(-50%);
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:1px;
+  color:#f97316;
+  opacity:.85;
+  font-family:'JetBrains Mono',monospace;
+  white-space:nowrap;
+  pointer-events:none;
+}
 .steer-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:7px;}
 .steer-wrap{flex:1;}
 .steer-btn{width:44px;height:44px;border-radius:10px;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none;-webkit-user-select:none;transition:all .12s;touch-action:none;flex-shrink:0;}
@@ -115,8 +165,8 @@ body:not(.dark) .fog-overlay{background:linear-gradient(to bottom,#1a2a1a 0%,#1a
   .cfg-row{grid-template-columns:repeat(4,1fr);}
 }
 .cg{display:flex;align-items:center;background:var(--bg2);padding:8px 10px;border-radius:12px;border:1px solid var(--border);width:100%;}
-.cg label{font-size:10px;color:var(--text);font-weight:700;text-transform:uppercase;letter-spacing:.5px;min-width:70px;}
-.cv{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:800;color:#f97316;min-width:36px;text-align:right;}
+.cg label{font-size:12px;color:var(--text);font-weight:700;text-transform:uppercase;letter-spacing:.5px;min-width:70px;}
+.cv{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:800;color:#f97316;min-width:54px;text-align:right;}
 .cv.bl{color:#3b82f6;}.cv.gr{color:#22c55e;}.cv.pu{color:#a855f7;}
 
 .delay-wrap{width:100%;}
@@ -143,7 +193,7 @@ body:not(.dark) .fog-overlay{background:linear-gradient(to bottom,#1a2a1a 0%,#1a
 /* Active game params row — matches stats bar style */
 .active-params{display:none;flex-wrap:wrap;justify-content:center;gap:0;padding:5px 0;border-top:1px solid var(--border);}
 .active-params>div{flex:1;min-width:60px;text-align:center;padding:3px 4px;}
-.active-params .ap-lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;display:block;}
+.active-params .ap-lbl{font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;display:block;}
 .active-params .ap-val{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;color:var(--text);display:block;}
 .btn-row{display:flex;gap:7px;align-items:center;}
 .btn{font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;border:none;border-radius:8px;padding:9px 18px;cursor:pointer;transition:all .2s;}
@@ -162,14 +212,14 @@ body:not(.dark) .fog-overlay{background:linear-gradient(to bottom,#1a2a1a 0%,#1a
 .md h2{font-size:19px;font-weight:800;color:#f97316;margin-bottom:12px;}
 .md-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
 .md-cell{background:var(--bg3);border-radius:10px;padding:9px;border:1px solid var(--border);}
-.md-cell .ml{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;}
+.md-cell .ml{font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;}
 .md-cell .mv{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;margin-top:3px;}
 .mv.grn{color:#22c55e;}.mv.red{color:#ef4444;}.mv.org{color:#f97316;}.mv.blu{color:#3b82f6;}
 .md-msg{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:14px;}
 .md .btn-row{justify-content:center;}
 
 /* WELCOME POPUP */
-.wmo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:300;align-items:flex-start;justify-content:center;padding:6px;overflow-y:auto;}
+.wmo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:300;align-items:center;justify-content:center;padding:16px;overflow-y:auto;}
 .wmo.vis{display:flex;}
 .wbox{background:var(--bg2);border:1px solid rgba(249,115,22,.25);border-radius:16px;padding:16px 14px 16px;max-width:800px;width:100%;margin:auto;box-shadow:0 10px 40px rgba(0,0,0,0.5);}
 
@@ -212,7 +262,7 @@ body:not(.dark) .fog-overlay{background:linear-gradient(to bottom,#1a2a1a 0%,#1a
 .ag{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0;}
 @media(max-width:480px){.ag{grid-template-columns:1fr;}}
 .ac{background:var(--bg3);border-radius:10px;padding:14px;border:1px solid var(--border);}
-.ac .al{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:4px;}
+.ac .al{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:4px;}
 .ac .al.gm{color:#3b82f6;}.ac .al.sc{color:#f97316;}
 .ac .at{font-size:12px;color:var(--text2);line-height:1.55;}
 
@@ -249,7 +299,7 @@ body:not(.dark) .fog-overlay{background:linear-gradient(to bottom,#1a2a1a 0%,#1a
 .leg-over{background:rgba(239,68,68,0.35);border:1px solid rgba(239,68,68,0.6);}
 .leg-under{background:rgba(249,163,22,0.35);border:1px solid rgba(249,163,22,0.6);}
 .chart-labels-y{display:flex;justify-content:space-between;padding:0 4px;margin-bottom:3px;}
-.chart-y-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;}
+.chart-y-label{font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;}
 .chart-y-center{opacity:.5;}
 
 /* Scrollable chart area with thick retro scrollbar */
@@ -271,7 +321,7 @@ body:not(.dark) .fog-overlay{background:linear-gradient(to bottom,#1a2a1a 0%,#1a
 .chart-nav-btn:hover{border-color:#f97316;color:#f97316;background:rgba(249,115,22,.1);}
 .chart-nav-btn:active{transform:scale(0.95);}
 
-.chart-x-label{text-align:center;font-size:10px;color:var(--text3);margin-top:4px;text-transform:uppercase;letter-spacing:.5px;}
+.chart-x-label{text-align:center;font-size:12px;color:var(--text3);margin-top:4px;text-transform:uppercase;letter-spacing:.5px;}
 .chart-scroll-hint{text-align:center;font-size:12px;color:#f97316;opacity:.7;margin:6px 0 2px;animation:pulse-hint 2s ease-in-out infinite;}
 @keyframes pulse-hint{0%,100%{opacity:.4;}50%{opacity:.9;}}
 .chart-amp-badge{text-align:center;margin:10px 0 3px;font-family:'JetBrains Mono',monospace;font-size:clamp(16px,4vw,22px);font-weight:700;color:#f97316;letter-spacing:.5px;}
@@ -286,7 +336,7 @@ body:not(.dark) .fog-overlay{background:linear-gradient(to bottom,#1a2a1a 0%,#1a
 .ch-params{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0;}
 @media(max-width:380px){.ch-params{grid-template-columns:1fr;}}
 .ch-param{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px 12px;}
-.ch-param-label{font-size:clamp(9px,2vw,11px);text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:3px;}
+.ch-param-label{font-size:clamp(11px,2.4vw,13px);text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:3px;}
 .ch-param-val{font-family:'JetBrains Mono',monospace;font-size:clamp(12px,2.5vw,15px);font-weight:700;margin-bottom:2px;}
 .ch-param-val.lo{color:#22c55e;}.ch-param-val.md{color:#f97316;}.ch-param-val.hi{color:#ef4444;}
 .ch-param-desc{font-size:11px;color:var(--text2);line-height:1.45;}
@@ -301,7 +351,7 @@ body:not(.dark) .fog-overlay{background:linear-gradient(to bottom,#1a2a1a 0%,#1a
 .ch-fin-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0;text-align:center;}
 .ch-fin-cell{background:rgba(0,0,0,.06);border-radius:8px;padding:8px;}
 body.dark .ch-fin-cell{background:rgba(255,255,255,.03);}
-.ch-fin-cell-label{font-size:clamp(9px,2vw,11px);text-transform:uppercase;letter-spacing:.4px;color:var(--text3);margin-bottom:2px;}
+.ch-fin-cell-label{font-size:clamp(11px,2.4vw,13px);text-transform:uppercase;letter-spacing:.4px;color:var(--text3);margin-bottom:2px;}
 .ch-fin-cell-val{font-family:'JetBrains Mono',monospace;font-size:clamp(12px,2.5vw,14px);font-weight:700;}
 .ch-fin-cell-val.red{color:#ef4444;}.ch-fin-cell-val.grn{color:#22c55e;}.ch-fin-cell-val.org{color:#f97316;}
 .ch-fin-detail{font-size:12px;color:var(--text2);line-height:1.6;margin-top:8px;text-align:left;}
@@ -345,50 +395,56 @@ html.fs-l .cfg-range{width:100%!important;flex:1;}
 
 .btn-export{background:var(--bg3);color:var(--text2);border:1px solid var(--border2);margin-top:8px;}
 .btn-export:hover{background:rgba(128,128,128,.12);}
+
+/* Mode toggle (Manual/Gyro) in header — replaces the welcome modal selector */
+.mode-toggle{background:none;border:1px solid var(--border2);border-radius:20px;padding:4px 9px;cursor:pointer;font-size:13px;color:var(--text2);transition:all .2s;white-space:nowrap;line-height:1;}
+.mode-toggle:hover{border-color:#f97316;color:#f97316;}
+.mode-toggle.gyro-on{border-color:#f97316;color:#f97316;background:rgba(249,115,22,.1);}
+
+/* History table classes — replace inline styles so dark/light theme works */
+.hist-tbl{width:100%;font-size:12px;border-collapse:collapse;}
+.hist-tbl th{padding:3px 5px;color:var(--text3);text-align:left;font-weight:600;}
+.hist-tbl td{padding:2px 5px;color:var(--text2);}
+.hist-tbl td.hist-num{font-weight:600;}
+.hist-tbl td.hist-fog{color:#a855f7;}
+.hist-tbl td.hist-pct.grn{color:#22c55e;font-weight:600;}
+.hist-tbl td.hist-pct.org{color:#f97316;font-weight:600;}
+.hist-tbl td.hist-pct.red{color:#ef4444;font-weight:600;}
+.hist-tbl td.hist-fate{font-weight:600;white-space:nowrap;}
+.hist-tbl td.hist-fate.grn{color:#22c55e;}
+.hist-tbl td.hist-fate.org{color:#f97316;}
+.hist-tbl td.hist-fate.red{color:#ef4444;}
+.hist-pattern{margin-top:8px;color:#f97316;font-size:12px;font-weight:700;}
+
+/* Ready-to-Drive popup — simpler, theme-aware version of welcome */
+.rdy-box{background:var(--bg2);border:1px solid var(--border);border-radius:18px;padding:28px 26px 22px;max-width:520px;width:100%;margin:auto;box-shadow:0 10px 40px rgba(0,0,0,0.4);}
+.rdy-box h2{font-size:clamp(22px,5vw,30px);font-weight:800;color:var(--text);margin-bottom:14px;line-height:1.2;}
+.rdy-box p{font-size:clamp(14px,3vw,16px);color:var(--text2);line-height:1.55;margin-bottom:22px;}
+.rdy-box p strong{color:var(--text);font-weight:700;}
+.rdy-btn{width:100%;padding:14px;background:var(--text);color:var(--bg2);border:none;border-radius:10px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:opacity .2s;}
+.rdy-btn:hover{opacity:.85;}
+.rdy-mode-row{display:flex;gap:8px;margin-bottom:18px;}
+.rdy-mode-btn{flex:1;padding:9px 4px;background:transparent;border:1px solid var(--border2);border-radius:8px;color:var(--text2);font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;}
+.rdy-mode-btn.act{border-color:#f97316;color:#f97316;background:rgba(249,115,22,.08);}
+.rdy-lang-row{display:flex;gap:6px;justify-content:flex-end;margin-bottom:4px;}
 </style>
 </head>
 <body class="dark">
 
-<!-- WELCOME POPUP -->
+<!-- READY-TO-DRIVE POPUP — simpler entry point, theme-aware -->
 <div class="wmo" id="wmo">
-  <div class="wbox">
-<!-- #1 Single-row header: theme | fs | TITLE+ver | lang -->
-<div class="wlang" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:nowrap;">
-  <button class="icon-btn" id="wThemeBtn" style="flex-shrink:0;">☀</button>
-  <div class="fs-sel" id="wFsSel" style="flex-shrink:0;">
-    <button class="fs-btn fs-btn-s fs-active" data-fs="s" title="Small">A</button>
-    <button class="fs-btn fs-btn-m" data-fs="m" title="Medium">A</button>
-    <button class="fs-btn fs-btn-l" data-fs="l" title="Large">A</button>
-  </div>
-  <div style="flex:1;min-width:0;text-align:center;overflow:hidden;">
-    <div id="wTitle" style="font-size:clamp(13px,3.5vw,20px);font-weight:800;background:linear-gradient(135deg,#f97316,#ef4444);-webkit-background-clip:text;-webkit-text-fill-color:transparent;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;">Steering Delay Simulator</div>
-    <div class="wver" id="wVer" style="margin-bottom:0;">v0.91 — Bullwhip Effect Demo</div>
-  </div>
-  <div style="display:flex;gap:6px;flex-shrink:0;">
-    <button class="lang-btn active" id="wBtnEN" title="English">🇬🇧</button>
-    <button class="lang-btn" id="wBtnTR" title="Türkçe">🇹🇷</button>
-  </div>
-</div>
-    <div class="whint" id="wHint">Tap <strong>?</strong> anytime to reopen this guide.</div>
-    <div class="wsteps">
-      <div class="wstep"><div class="wsn">1</div><div class="wst" id="ws1"></div></div>
-      <div class="wstep"><div class="wsn">2</div><div class="wst" id="ws2"></div></div>
-      <div class="wstep"><div class="wsn">3</div><div class="wst" id="ws3"></div></div>
-      <div class="wstep"><div class="wsn">4</div><div class="wst" id="ws4"></div></div>
-      <div class="wstep"><div class="wsn">5</div><div class="wst" id="ws5"></div></div>
+  <div class="rdy-box">
+    <div class="rdy-lang-row">
+      <button class="lang-btn active" id="wBtnEN" title="English">🇬🇧</button>
+      <button class="lang-btn" id="wBtnTR" title="Türkçe">🇹🇷</button>
     </div>
-    
-    <div class="wmode" style="margin-top:20px;">
-      <button class="wmode-btn act" id="wModeMan">👆 Manual</button>
-      <button class="wmode-btn" id="wModeGyro">📱 Gyro</button>
+    <h2 id="wTitle">Ready to Drive?</h2>
+    <p id="wBody">This simulator demonstrates the <strong>Bullwhip Effect</strong>. The delay slider represents information lag in a supply chain. Your goal: keep the car on the road.</p>
+    <div class="rdy-mode-row">
+      <button class="rdy-mode-btn act" id="wModeMan">👆 Manual</button>
+      <button class="rdy-mode-btn" id="wModeGyro">📱 Gyro</button>
     </div>
-    <button class="wdismiss" id="wDismiss">Let's Drive ▶</button>
-    <div style="text-align:center;padding-top:14px;margin-top:14px;border-top:1px solid var(--border);font-size:11px;color:var(--text3);letter-spacing:.4px;">
-      <a href="https://scholar.google.com/citations?user=O5LOOKYAAAAJ&hl=tr" target="_blank" rel="noopener" style="color:#f97316;text-decoration:underline;">Prof. Dr. Erkut AKKARTAL</a>
-      &nbsp;|&nbsp;
-      <a href="https://yeditepe.edu.tr/tr" target="_blank" rel="noopener" style="color:#f97316;text-decoration:underline;">Yeditepe Üniversitesi</a>
-      &nbsp;|&nbsp; 2026
-    </div>
+    <button class="rdy-btn" id="wDismiss">UNDERSTOOD</button>
   </div>
 </div>
 
@@ -450,13 +506,13 @@ html.fs-l .cfg-range{width:100%!important;flex:1;}
     <div class="cfg-row">
       <div class="cg">
         <label id="lDelay" style="width:40px;">Delay</label><span class="info-btn" data-tt="ttDelay">i</span>
-        <input type="range" class="cfg-range" id="sDelay" min="0" max="30" value="30" step="1">
-        <span class="cv" id="dDelay">30</span>
+        <input type="range" class="cfg-range" id="sDelay" min="1" max="10" value="10" step="1">
+        <span class="cv" id="dDelay">10</span>
       </div>
       <div class="cg">
         <label id="lSpeed" style="width:40px;">Speed</label><span class="info-btn" data-tt="ttSpeed">i</span>
-        <input type="range" class="cfg-range bl" id="sSpeed" min="1" max="8" value="8" step="1">
-        <span class="cv bl" id="dSpeed">8</span>
+        <input type="range" class="cfg-range bl" id="sSpeed" min="10" max="220" value="120" step="10">
+        <span class="cv bl" id="dSpeed">120 km/h</span>
       </div>
       <div class="cg">
         <label id="lDur" style="width:40px;">Durat</label><span class="info-btn" data-tt="ttDur">i</span>
@@ -471,8 +527,8 @@ html.fs-l .cfg-range{width:100%!important;flex:1;}
     </div>
     
     <div class="active-params">
-      <div><span class="ap-lbl" id="apDelayLabel">Delay</span><span class="ap-val" id="apDelayVal">30</span></div>
-      <div><span class="ap-lbl" id="apSpeedLabel">Speed</span><span class="ap-val" id="apSpeedVal">8</span></div>
+      <div><span class="ap-lbl" id="apDelayLabel">Delay</span><span class="ap-val" id="apDelayVal">10</span></div>
+      <div><span class="ap-lbl" id="apSpeedLabel">Speed</span><span class="ap-val" id="apSpeedVal">120</span></div>
       <div><span class="ap-lbl" id="apDurLabel">Dur</span><span class="ap-val" id="apDurVal">60s</span></div>
       <div><span class="ap-lbl" id="apHLLabel">Light</span><span class="ap-val" id="apHLVal">70m</span></div>
     </div>
@@ -590,7 +646,7 @@ var S={
     lTime:'Time',lRoad:'On Road',lViol:'Violations',lStatus:'Status',
     stReady:'Ready',stDriving:'Driving',stDone:'Done',
     lDelay:'Delay',lSpeed:'Speed',lDur:'Duration',lHL:'Headlight',lSound:'Sound',
-    lDlo:'0 = Instant',lDhi:'15 = Chaos',
+    lDlo:'1 = Real-time',lDhi:'10 = Manual paperwork',
     btnGo:'Start',btnRs:'Reset',mRe:'Play Again',mCl:'Close',mCh:'📊 What Do These Stats Mean?',
     mTitle:'Run Complete',mLOn:'On-Road',mLOff:'Off-Road',mLVio:'Violations',mLDel:'Delay',
     msg98:'Nearly perfect. Try increasing delay to see control degrade.',
@@ -599,10 +655,10 @@ var S={
     msg0:'Loss of control. Delayed feedback = constant oscillation. The bullwhip effect.',
     eTitle:'What Is the Bullwhip Effect?',
     eP1:'In supply chains, <strong>information travels with delay</strong>. A small retail demand change gets amplified upstream — each stage overreacts seeing the signal late. A 10% retail increase can become a 40% factory surge. This is the <strong>Bullwhip Effect</strong>.',
-    eP2:'This simulator makes you <strong>feel</strong> it. At delay 0 your wheels respond instantly. As delay increases your input arrives late — you overcorrect, oscillate, drift off-road. <strong>Exactly what happens in supply chains without real-time visibility.</strong>',
+    eP2:'This simulator makes you <strong>feel</strong> it. At delay 1 your wheels respond instantly. As delay increases your input arrives late — you overcorrect, oscillate, drift off-road. <strong>Exactly what happens in supply chains without real-time visibility.</strong>',
     eGG:'In This Game',eGGt:'You steer → response late → overcorrect → violations pile up',
     eGS:'In Supply Chains',eGSt:'Demand changes → info arrives late → each stage overorders → chaos',
-    eFG:'The Fix (Game)',eFGt:'Delay 0 + full headlights = smooth control, 100% on-road',
+    eFG:'The Fix (Game)',eFGt:'Delay 1 + full headlights = smooth control, 100% on-road',
     eFR:'The Fix (Real World)',eFRt:'Real-time POS, IoT sensors, integrated ERP — eliminate the lag',
     eHist:'Session History',
     histPat:'Pattern: Low delay avg {lo}% vs high delay avg {hi}%. More lag = more chaos.',
@@ -624,7 +680,7 @@ var S={
     chartAmpSub:'Your response swings were {ratio}× wider than the demand signal',
     chartExplain0:'<div class="ce-head">Perfect Tracking — No Bullwhip</div>With <strong>zero delay</strong>, your steering response closely followed the demand signal (road curves). The two lines nearly overlap — this is the ideal state.<div class="ce-analogy"><strong>Supply Chain Equivalent:</strong> When a retailer shares real-time POS (Point of Sale) data with all upstream partners — distributor, manufacturer, raw material supplier — everyone sees actual demand instantly. No guessing, no overreacting. Orders match reality. The bullwhip never forms.</div><div class="ce-head">Why This Matters</div>Companies like <strong>Zara</strong> and <strong>Dell</strong> built empires on this principle. Zara\'s stores transmit daily sales data directly to factories. Dell\'s build-to-order model eliminated forecast-driven inventory entirely. Both achieved what you just did: response = signal.',
     chartExplainLow:'<div class="ce-head">Mild Amplification — Early Bullwhip</div>A small information lag caused your response (orange) to <strong>overshoot</strong> the demand signal (blue). You corrected, but slightly late — so each correction was a bit too large.<div class="ce-analogy"><strong>Supply Chain Equivalent:</strong> A retailer sees a 10% demand increase on Monday but only orders from the distributor on Friday. By then, shelves are empty so they order 20% extra "just in case." The distributor sees the 20% spike and orders 30% more from the factory. A small real change has already doubled.</div><div class="ce-head">The Mechanism</div>This is <strong>demand signal processing</strong> — each stage interprets the delayed, distorted signal and adds its own safety margin. Even a small delay triggers a chain reaction of overcorrection.',
-    chartExplainHigh:'<div class="ce-head">Severe Amplification — Full Bullwhip Effect</div>The demand signal (blue) swung gently. But your response (orange) swung <strong>violently</strong> — wider, wilder, and always too late. This is the Bullwhip Effect at full force.<div class="ce-analogy"><strong>Supply Chain Equivalent:</strong> A 5% increase in consumer demand at the retail level becomes a 10% order increase at the distributor, a 20% surge at the manufacturer, and a 40% panic order to the raw material supplier. Each stage, seeing the signal later and more distorted, overreacts even more. Factories ramp up production. Then when the overshoot becomes visible, everyone slashes orders — creating the opposite crisis: excess inventory, cancelled orders, layoffs.</div><div class="ce-head">The Four Root Causes (Lee, Padmanabhan & Whang, 1997)</div><strong>1. Demand Signal Processing</strong> — Each stage forecasts from its downstream orders (not actual consumer demand), adding layers of distortion.<br><strong>2. Order Batching</strong> — Companies accumulate demand and order in bulk (weekly/monthly), creating lumpy signals.<br><strong>3. Price Fluctuations</strong> — Promotions and discounts cause "forward buying" — ordering more than needed to stockpile at low prices.<br><strong>4. Shortage Gaming</strong> — When supply is limited, buyers inflate orders hoping to get a larger allocation, then cancel when supply normalises.<div class="ce-head">The Cure</div>What you experienced with <strong>delay = 0</strong> is the cure: <strong>eliminate information lag</strong>. In practice this means real-time POS sharing, IoT-enabled inventory tracking, integrated ERP/SCM systems, CPFR (Collaborative Planning, Forecasting & Replenishment), and VMI (Vendor Managed Inventory). The technology exists. The challenge is trust and coordination between trading partners.',
+    chartExplainHigh:'<div class="ce-head">Severe Amplification — Full Bullwhip Effect</div>The demand signal (blue) swung gently. But your response (orange) swung <strong>violently</strong> — wider, wilder, and always too late. This is the Bullwhip Effect at full force.<div class="ce-analogy"><strong>Supply Chain Equivalent:</strong> A 5% increase in consumer demand at the retail level becomes a 10% order increase at the distributor, a 20% surge at the manufacturer, and a 40% panic order to the raw material supplier. Each stage, seeing the signal later and more distorted, overreacts even more. Factories ramp up production. Then when the overshoot becomes visible, everyone slashes orders — creating the opposite crisis: excess inventory, cancelled orders, layoffs.</div><div class="ce-head">The Four Root Causes (Lee, Padmanabhan & Whang, 1997)</div><strong>1. Demand Signal Processing</strong> — Each stage forecasts from its downstream orders (not actual consumer demand), adding layers of distortion.<br><strong>2. Order Batching</strong> — Companies accumulate demand and order in bulk (weekly/monthly), creating lumpy signals.<br><strong>3. Price Fluctuations</strong> — Promotions and discounts cause "forward buying" — ordering more than needed to stockpile at low prices.<br><strong>4. Shortage Gaming</strong> — When supply is limited, buyers inflate orders hoping to get a larger allocation, then cancel when supply normalises.<div class="ce-head">The Cure</div>What you experienced with <strong>delay = 1</strong> is the cure: <strong>eliminate information lag</strong>. In practice this means real-time POS sharing, IoT-enabled inventory tracking, integrated ERP/SCM systems, CPFR (Collaborative Planning, Forecasting & Replenishment), and VMI (Vendor Managed Inventory). The technology exists. The challenge is trust and coordination between trading partners.',
     chartAmpNote:'Amplification ratio: {ratio}×',
     // Scenario params
     pDelay:'Information Delay',pSpeed:'Market Volatility',pHeadlight:'Forecast Horizon',pDuration:'Simulation Period',
@@ -647,12 +703,13 @@ var S={
     finBankruptDetail:'Catastrophic oscillation destroyed your margins. <strong>${over}</strong> was wasted on excess inventory that had to be written off, and <strong>${under}</strong> in revenue evaporated from empty shelves. The combined losses exceeded your capital reserves. <strong>Your company is insolvent.</strong> Go back, reduce your information delay, extend your forecast horizon, and try again with the wisdom you\'ve gained.',
     // Advice
     advHead:'Recommendations for Your Next Run',
-    advDelay:'<strong>Reduce Information Delay:</strong> Implement real-time POS data sharing, IoT inventory sensors, and integrated ERP systems. In the game: set Delay to 0–2.',
+    advDelay:'<strong>Reduce Information Delay:</strong> Implement real-time POS data sharing, IoT inventory sensors, and integrated ERP systems. In the game: set Delay to 1–2.',
     advHeadlight:'<strong>Extend Forecast Horizon:</strong> Invest in demand planning, machine learning forecasting, and collaborative planning (CPFR) with trading partners. In the game: set Headlight to 80–100.',
     advSpeed:'<strong>When markets are volatile:</strong> shorter, more frequent ordering cycles outperform large batch orders. Agility beats efficiency in turbulent demand.',
     advGeneral:'<strong>The core lesson:</strong> The Bullwhip Effect is not caused by demand variability — it is caused by <em>delayed visibility</em> of that variability. Eliminate the lag, eliminate the whip.',
     tapResume:'Tap anywhere to resume',
-    wTitle:'Steering Delay Simulator',wVer:'v0.91 — Bullwhip Effect Demo',
+    wTitle:'Ready to Drive?',wVer:'v0.91 — Bullwhip Effect Demo',
+    wBody:'This simulator demonstrates the <strong>Bullwhip Effect</strong>. The delay slider represents information lag in a supply chain. Your goal: keep the car on the road.',
     wDevM:'Mobile — use slider or ◀ ▶ buttons',
     wDevD:'Desktop — slider, buttons, or ← → / A D keys',
     wHint:'Tap <strong>?</strong> anytime to reopen this guide.',
@@ -665,13 +722,13 @@ var S={
     wcL2:'Speed',wcV2:'Road scroll speed',
     wcL3:'Duration',wcV3:'Run length (seconds)',
     wcL4:'Headlight',wcV4:'Forecast horizon',
-    wDismiss:"Let's Drive ▶",
+    wDismiss:'UNDERSTOOD',
     /* #6 play button texts on canvas */
     canvasReady:"Tap ▶ to Start",
     canvasSub:'Adjust settings below first',
     canvasHint:'Scroll down to adjust settings',
-    ttDelay:'Represents information lag. High delay means your steering input arrives late to the wheels, causing the Bullwhip Effect.',
-    ttSpeed:'How fast the road scrolls. Represents the rate of customer demand or general market volatility.',
+    ttDelay:'Order/stock-info delay between supply chain tiers — from real-time POS sharing (1) to weekly manual reports (10). Higher delay = wheels respond later = the Bullwhip Effect.',
+    ttSpeed:'Vehicle speed in km/h — represents the rate of customer demand or general market volatility.',
     ttDur:'Total time for one simulation run. Longer runs make it harder to maintain focus and control.',
     ttHL:'How far ahead you can see before the fog. Represents your forecast horizon or supply chain visibility.',
     wModeMan:'👆 Manual',
@@ -683,7 +740,7 @@ var S={
     lTime:'Süre',lRoad:'Yolda',lViol:'İhlal',lStatus:'Durum',
     stReady:'Hazır',stDriving:'Sürüyor',stDone:'Bitti',
     lDelay:'Gecikme',lSpeed:'Hız',lDur:'Süre',lHL:'Far',lSound:'Ses',
-    lDlo:'0 = Anında',lDhi:'15 = Kaos',
+    lDlo:'1 = Anlık',lDhi:'10 = Manuel kâğıt',
     btnGo:'Başlat',btnRs:'Sıfırla',mRe:'Tekrar Oyna',mCl:'Kapat',mCh:'📊 Bu İstatistikler Ne Anlama Geliyor?',
     mTitle:'Tur Tamamlandı',mLOn:'Yolda',mLOff:'Yol Dışı',mLVio:'İhlaller',mLDel:'Gecikme',
     msg98:'Neredeyse mükemmel. Kontrolün nasıl bozulduğunu görmek için gecikmeyi artırın.',
@@ -692,10 +749,10 @@ var S={
     msg0:'Kontrol kaybı. Gecikmeli geri bildirim sürekli salınım — kamçı etkisi.',
     eTitle:'Kamçı Etkisi Nedir?',
     eP1:'Tedarik zincirlerinde <strong>bilgi gecikmeli iletilir</strong>. Perakendedeki küçük bir talep değişikliği yukarıya büyür — her aşama geç görüp aşırı tepki verir. %10 artış fabrikada %40 dalgalanmaya dönüşebilir. Bu <strong>Kamçı Etkisi</strong>\'dir.',
-    eP2:'Bu simülatör bunu <strong>hissettirir</strong>. Gecikme 0\'da tekerlek anında yanıt verir. Gecikme arttıkça girişiniz geç ulaşır — aşırı düzelirsiniz, salınıma girersiniz. <strong>Gerçek zamanlı görünürlük olmayan tedarik zincirinde olan budur.</strong>',
+    eP2:'Bu simülatör bunu <strong>hissettirir</strong>. Gecikme 1\'de tekerlek anında yanıt verir. Gecikme arttıkça girişiniz geç ulaşır — aşırı düzelirsiniz, salınıma girersiniz. <strong>Gerçek zamanlı görünürlük olmayan tedarik zincirinde olan budur.</strong>',
     eGG:'Bu Oyunda',eGGt:'Direksiyon → yanıt geç → aşırı düzeltme → ihlaller',
     eGS:'Tedarik Zincirinde',eGSt:'Talep değişir → bilgi geç → fazla sipariş → kaos',
-    eFG:'Çözüm (Oyun)',eFGt:'Gecikme 0 + tam far = akıcı kontrol, %100 yolda',
+    eFG:'Çözüm (Oyun)',eFGt:'Gecikme 1 + tam far = akıcı kontrol, %100 yolda',
     eFR:'Çözüm (Gerçek Dünya)',eFRt:'Gerçek zamanlı POS, IoT, entegre ERP — gecikmeyi kaldırın',
     eHist:'Oturum Geçmişi',
     histPat:'Örüntü: Düşük gecikme ort %{lo} — yüksek gecikme ort %{hi}.',
@@ -717,7 +774,7 @@ var S={
     chartAmpSub:'Tepki salınımlarınız talep sinyalinden {ratio} kat daha genişti',
     chartExplain0:'<div class="ce-head">Mükemmel Takip — Kamçı Etkisi Yok</div><strong>Sıfır gecikme</strong> ile direksiyon tepkiniz talep sinyalini (yol eğrileri) yakından takip etti. İki çizgi neredeyse örtüşüyor — bu ideal durumdur.<div class="ce-analogy"><strong>Tedarik Zinciri Karşılığı:</strong> Bir perakendeci gerçek zamanlı satış noktası (POS) verilerini tüm üst akış ortaklarıyla paylaştığında — dağıtıcı, üretici, hammadde tedarikçisi — herkes gerçek talebi anında görür. Tahmin yok, aşırı tepki yok. Siparişler gerçekle eşleşir. Kamçı asla oluşmaz.</div><div class="ce-head">Neden Önemli</div><strong>Zara</strong> ve <strong>Dell</strong> gibi şirketler imparatorluklarını bu ilke üzerine kurdu. Zara mağazaları günlük satış verilerini doğrudan fabrikalara iletir. Dell\'in siparişe göre üretim modeli tahmine dayalı envanteri tamamen ortadan kaldırdı.',
     chartExplainLow:'<div class="ce-head">Hafif Büyütme — Erken Kamçı</div>Küçük bir bilgi gecikmesi tepkinizin (turuncu) talep sinyalini (mavi) <strong>aşmasına</strong> neden oldu. Düzeltme yaptınız ama biraz geç — her düzeltme biraz fazla büyük oldu.<div class="ce-analogy"><strong>Tedarik Zinciri Karşılığı:</strong> Perakendeci Pazartesi %10 talep artışı görüyor ama dağıtıcıya ancak Cuma sipariş veriyor. O zamana kadar raflar boş, %20 fazla sipariş veriyor "her ihtimale karşı." Dağıtıcı %20 artışı görünce fabrikadan %30 fazla sipariş veriyor. Küçük bir gerçek değişiklik zaten ikiye katlandı.</div><div class="ce-head">Mekanizma</div>Bu <strong>talep sinyali işleme</strong>dir — her aşama gecikmiş, bozulmuş sinyali yorumlar ve kendi güvenlik marjını ekler.',
-    chartExplainHigh:'<div class="ce-head">Şiddetli Büyütme — Tam Kamçı Etkisi</div>Talep sinyali (mavi) hafifçe salındı. Ama tepkiniz (turuncu) <strong>şiddetle</strong> salındı — daha geniş, daha çılgın ve her zaman geç. Bu tam kamçı etkisidir.<div class="ce-analogy"><strong>Tedarik Zinciri Karşılığı:</strong> Perakende düzeyinde %5 tüketici talebi artışı dağıtıcıda %10, üreticide %20, hammadde tedarikçisinde %40 panik siparişe dönüşür. Her aşama sinyali daha geç ve daha bozuk görür, daha fazla aşırı tepki verir. Fabrikalar üretimi artırır. Sonra aşma görünür olduğunda herkes siparişleri keser — tam tersi kriz: fazla envanter, iptal edilen siparişler, işten çıkarmalar.</div><div class="ce-head">Dört Temel Neden (Lee, Padmanabhan ve Whang, 1997)</div><strong>1. Talep Sinyali İşleme</strong> — Her aşama gerçek tüketici talebi yerine alt akış siparişlerinden tahmin yapar.<br><strong>2. Sipariş Toplulaştırma</strong> — Şirketler talebi biriktirir ve toplu sipariş verir (haftalık/aylık).<br><strong>3. Fiyat Dalgalanmaları</strong> — Promosyonlar "ileri satın alma"ya neden olur — düşük fiyattan stok yapmak için gereğinden fazla sipariş.<br><strong>4. Kıtlık Oyunu</strong> — Arz sınırlı olduğunda alıcılar daha büyük tahsis almak için siparişleri şişirir, arz normalleşince iptal eder.<div class="ce-head">Çözüm</div><strong>Gecikme = 0</strong> ile deneyimlediğiniz çözümdür: <strong>bilgi gecikmesini ortadan kaldırın</strong>. Pratikte bu gerçek zamanlı POS paylaşımı, IoT destekli envanter takibi, entegre ERP/SCM sistemleri, CPFR (İşbirliğine Dayalı Planlama, Tahmin ve İkmal) ve VMI (Tedarikçi Yönetimli Envanter) anlamına gelir.',
+    chartExplainHigh:'<div class="ce-head">Şiddetli Büyütme — Tam Kamçı Etkisi</div>Talep sinyali (mavi) hafifçe salındı. Ama tepkiniz (turuncu) <strong>şiddetle</strong> salındı — daha geniş, daha çılgın ve her zaman geç. Bu tam kamçı etkisidir.<div class="ce-analogy"><strong>Tedarik Zinciri Karşılığı:</strong> Perakende düzeyinde %5 tüketici talebi artışı dağıtıcıda %10, üreticide %20, hammadde tedarikçisinde %40 panik siparişe dönüşür. Her aşama sinyali daha geç ve daha bozuk görür, daha fazla aşırı tepki verir. Fabrikalar üretimi artırır. Sonra aşma görünür olduğunda herkes siparişleri keser — tam tersi kriz: fazla envanter, iptal edilen siparişler, işten çıkarmalar.</div><div class="ce-head">Dört Temel Neden (Lee, Padmanabhan ve Whang, 1997)</div><strong>1. Talep Sinyali İşleme</strong> — Her aşama gerçek tüketici talebi yerine alt akış siparişlerinden tahmin yapar.<br><strong>2. Sipariş Toplulaştırma</strong> — Şirketler talebi biriktirir ve toplu sipariş verir (haftalık/aylık).<br><strong>3. Fiyat Dalgalanmaları</strong> — Promosyonlar "ileri satın alma"ya neden olur — düşük fiyattan stok yapmak için gereğinden fazla sipariş.<br><strong>4. Kıtlık Oyunu</strong> — Arz sınırlı olduğunda alıcılar daha büyük tahsis almak için siparişleri şişirir, arz normalleşince iptal eder.<div class="ce-head">Çözüm</div><strong>Gecikme = 1</strong> ile deneyimlediğiniz çözümdür: <strong>bilgi gecikmesini ortadan kaldırın</strong>. Pratikte bu gerçek zamanlı POS paylaşımı, IoT destekli envanter takibi, entegre ERP/SCM sistemleri, CPFR (İşbirliğine Dayalı Planlama, Tahmin ve İkmal) ve VMI (Tedarikçi Yönetimli Envanter) anlamına gelir.',
     chartAmpNote:'Büyütme oranı: {ratio}×',
     pDelay:'Bilgi Gecikmesi',pSpeed:'Piyasa Oynaklığı',pHeadlight:'Tahmin Ufku',pDuration:'Simülasyon Süresi',
     pDelayDesc:'Stok sayımları ve satın alma siparişlerinin üst akış tedarikçilere ulaşma süresi',
@@ -736,12 +793,13 @@ var S={
     finModerateDetail:'Gecikmeli tepkiler envanter uyumsuzluğuna neden oldu. Fazla stok maliyetlerinde (depolama, değer kaybı, fire) <strong>{over}₺</strong>, stok dışı kalmadan kaynaklanan gelir kaybında (kaçırılan satışlar, müşteri kaybı) <strong>{under}₺</strong> kaybettiniz.',
     finBankruptDetail:'Felaket salınım marjlarınızı yok etti. <strong>{over}₺</strong> fazla envantere harcandı ve silinmek zorunda kaldı, <strong>{under}₺</strong> gelir boş raflar yüzünden buharlaştı. Toplam kayıplar sermaye rezervlerini aştı. <strong>Şirketiniz iflas etti.</strong> Geri dönün, bilgi gecikmenizi azaltın, tahmin ufkunuzu genişletin ve edindiğiniz bilgelikle tekrar deneyin.',
     advHead:'Bir Sonraki Turunuz İçin Öneriler',
-    advDelay:'<strong>Bilgi Gecikmesini Azaltın:</strong> Gerçek zamanlı POS veri paylaşımı, IoT envanter sensörleri ve entegre ERP sistemleri uygulayın. Oyunda: Gecikmeyi 0–2 yapın.',
+    advDelay:'<strong>Bilgi Gecikmesini Azaltın:</strong> Gerçek zamanlı POS veri paylaşımı, IoT envanter sensörleri ve entegre ERP sistemleri uygulayın. Oyunda: Gecikmeyi 1–2 yapın.',
     advHeadlight:'<strong>Tahmin Ufkunu Genişletin:</strong> Talep planlaması, makine öğrenimi tahmini ve ticari ortaklarla işbirlikçi planlama (CPFR) yatırımı yapın. Oyunda: Far\'ı 80–100 yapın.',
     advSpeed:'<strong>Piyasalar dalgalı olduğunda:</strong> daha kısa ve sık sipariş döngüleri büyük toplu siparişlerden daha iyi performans gösterir. Çalkantılı talepte çeviklik verimliliği yener.',
     advGeneral:'<strong>Temel ders:</strong> Kamçı Etkisi talep değişkenliğinden kaynaklanmaz — değişkenliğin <em>gecikmeli görünürlüğünden</em> kaynaklanır. Gecikmeyi ortadan kaldırın, kamçıyı ortadan kaldırın.',
     tapResume:'Devam etmek için dokunun',
-    wTitle:'Direksiyon Gecikmesi Simülatörü',wVer:'v0.91 — Kamçı Etkisi Demosu',
+    wTitle:'Sürmeye Hazır mısın?',wVer:'v0.91 — Kamçı Etkisi Demosu',
+    wBody:'Bu simülatör <strong>Kamçı Etkisini</strong> gösterir. Gecikme kaydırıcısı tedarik zincirindeki bilgi gecikmesini temsil eder. Hedefin: arabayı yolda tutmak.',
     wDevM:'Mobil — kaydırıcı veya ◀ ▶ düğmelerini kullanın',
     wDevD:'Masaüstü — kaydırıcı, düğme veya ← → / A D tuşları',
     wHint:'<strong>?</strong> düğmesine (sağ üst) basarak bu kılavuzu açabilirsiniz.',
@@ -754,12 +812,12 @@ var S={
     wcL2:'Hız',wcV2:'Yolun hareket hızı',
     wcL3:'Süre',wcV3:'Tur süresi (saniye)',
     wcL4:'Far',wcV4:'Görüş mesafesi',
-    wDismiss:'Haydi Sürüşe ▶',
+    wDismiss:'ANLADIM',
     canvasReady:'▶ Başlat',
     canvasSub:'Aşağıdaki ayarları yapıp başlayın',
     canvasHint:'Ayarları değiştirmek için aşağıya kaydırın',
-    ttDelay:'Bilgi gecikmesini temsil eder. Yüksek gecikme, direksiyon girişinizin tekerleklere geç ulaşmasına ve Kamçı Etkisine neden olur.',
-    ttSpeed:'Yolun kayma hızı. Müşteri talebinin hızını veya genel piyasa dalgalanmasını temsil eder.',
+    ttDelay:'Tedarik zinciri katmanları arası sipariş/stok bilgisi gecikmesi — gerçek zamanlı POS paylaşımından (1) haftalık manuel raporlara (10). Daha yüksek gecikme = tekerlek geç tepki verir = Kamçı Etkisi.',
+    ttSpeed:'Aracın hızı (km/s) — müşteri talebinin hızını veya genel piyasa dalgalanmasını temsil eder.',
     ttDur:'Bir simülasyon turunun toplam süresi. Uzun turlar odaklanmayı ve kontrolü zorlaştırır.',
     ttHL:'Sisten önce ne kadar ileriyi görebildiğiniz. Tahmin ufkunuzu veya tedarik zinciri görünürlüğünü temsil eder.',
     wModeMan:'👆 Manuel',
@@ -776,41 +834,41 @@ function t(k){ return S[lang][k] || S.en[k] || k; }
 // ═══════════════════════════════════════════════════════════════
 function $id(id){ return document.getElementById(id); }
 
-var canvas      = $id('gc');
-var ctx         = canvas.getContext('2d');
+const canvas      = $id('gc');
+const ctx         = canvas.getContext('2d');
 var CW          = 1200;
 var CH          = 400;
 canvas.width    = CW;
 
-var steerSlider = $id('steerSlider');
-var actTri      = $id('actTri');
-var sDelay      = $id('sDelay');
-var sSpeed      = $id('sSpeed');
-var sDur        = $id('sDur');
-var sFog        = $id('sFog');
-var sTime       = $id('sTime');
-var sRoad       = $id('sRoad');
-var sViol       = $id('sViol');
-var sStat       = $id('sStat');
-var pFill       = $id('pFill');
-var bL          = $id('bL');
-var bR          = $id('bR');
-var fogOverlay  = $id('fogOverlay');
-var mo          = $id('mo');
-var wmo         = $id('wmo');
+const steerSlider = $id('steerSlider');
+const actTri      = $id('actTri');
+const sDelay      = $id('sDelay');
+const sSpeed      = $id('sSpeed');
+const sDur        = $id('sDur');
+const sFog        = $id('sFog');
+const sTime       = $id('sTime');
+const sRoad       = $id('sRoad');
+const sViol       = $id('sViol');
+const sStat       = $id('sStat');
+const pFill       = $id('pFill');
+const bL          = $id('bL');
+const bR          = $id('bR');
+const fogOverlay  = $id('fogOverlay');
+const mo          = $id('mo');
+const wmo         = $id('wmo');
 
-var btnMute     = $id('btnMute');
-var btnResetTop = $id('btnResetTop');
+const btnMute     = $id('btnMute');
+const btnResetTop = $id('btnResetTop');
 
-var apDelayVal  = $id('apDelayVal');
-var apSpeedVal  = $id('apSpeedVal');
-var apDurVal    = $id('apDurVal');
-var apHLVal     = $id('apHLVal');
+const apDelayVal  = $id('apDelayVal');
+const apSpeedVal  = $id('apSpeedVal');
+const apDurVal    = $id('apDurVal');
+const apHLVal     = $id('apHLVal');
 
-var apDelayLabel= $id('apDelayLabel');
-var apSpeedLabel= $id('apSpeedLabel');
-var apDurLabel  = $id('apDurLabel');
-var apHLLabel   = $id('apHLLabel');
+const apDelayLabel= $id('apDelayLabel');
+const apSpeedLabel= $id('apSpeedLabel');
+const apDurLabel  = $id('apDurLabel');
+const apHLLabel   = $id('apHLLabel');
 
 // Gyro state
 var gyroActive = false;
@@ -823,9 +881,9 @@ function toggleTheme(){
   isDark = !isDark;
   document.body.classList.toggle('dark', isDark);
   var icon = isDark ? '☀' : '☾';
-  $id('themeBtn').textContent = icon;
-  $id('wThemeBtn').textContent = icon;
-  $id('chThemeBtn').textContent = icon;
+  var tBtn = $id('themeBtn'); if(tBtn) tBtn.textContent = icon;
+  var wBtn = $id('wThemeBtn'); if(wBtn) wBtn.textContent = icon;
+  var cBtn = $id('chThemeBtn'); if(cBtn) cBtn.textContent = icon;
   updateFogOverlay();
   var mc=document.querySelector('meta[name="theme-color"]'); if(mc) mc.content=isDark?'#0a0a0f':'#f2f1ed';
   if(!G.running) drawStatic();
@@ -993,64 +1051,190 @@ function updateFogOverlay(){
 sFog.addEventListener('input', function(){ $id('dFog').textContent=sFog.value+'m'; updateFogOverlay(); });
 
 // ═══════════════════════════════════════════════════════════════
-// AUDIO
+// AUDIO — engine sound, off-road warning, screech, beep
 // ═══════════════════════════════════════════════════════════════
+// Browsers won't play sound until the user clicks/taps once. We track
+// whether we've started the AudioContext yet via audio.init().
 var soundEnabled = true;
 
-var audio={
-  ctx:null,warnOsc:null,warnGain:null,warnLfo:null,warnOn:false,engOsc:null, engGain:null, engOn:false,
-  init:function(){
-    if(!this.ctx){ try{ this.ctx=new(window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
-    if(this.ctx && this.ctx.state==='suspended'){ try{ this.ctx.resume(); }catch(e){} }
-  },
-  beep:function(){
-    if(!soundEnabled||!this.ctx) return;
-    if(this.ctx.state==='suspended') this.ctx.resume();
-    try{ var o=this.ctx.createOscillator(),g=this.ctx.createGain(); o.type='sawtooth'; o.frequency.value=800; g.gain.value=0.15; g.gain.exponentialRampToValueAtTime(0.001,this.ctx.currentTime+0.2); o.connect(g); g.connect(this.ctx.destination); o.start(); o.stop(this.ctx.currentTime+0.2); }catch(e){}
-  },
-  startWarn:function(){
-    if(this.warnOn||!soundEnabled||!this.ctx) return;
-    try{ this.warnOsc=this.ctx.createOscillator(); this.warnGain=this.ctx.createGain(); this.warnLfo=this.ctx.createOscillator(); var lG=this.ctx.createGain(); this.warnOsc.type='square'; this.warnOsc.frequency.value=220; this.warnGain.gain.value=0.06; this.warnLfo.frequency.value=8; lG.gain.value=0.06; this.warnLfo.connect(lG); lG.connect(this.warnGain.gain); this.warnLfo.start(); this.warnOsc.connect(this.warnGain); this.warnGain.connect(this.ctx.destination); this.warnOsc.start(); this.warnOn=true; }catch(e){}
-  },
-  stopWarn:function(){
-    if(!this.warnOn) return;
-    try{ this.warnLfo.stop(); this.warnOsc.stop(); }catch(e){}
-    this.warnOn=false; this.warnOsc=null; this.warnGain=null; this.warnLfo=null;
-  },
-  // Tick-based engine: repeating click sounds — faster speed = higher pitch + rate
-  tickSpeed:1, tickRunning:false, tickTimer:null,
-  startEngine:function(){
-    if(this.tickRunning||!soundEnabled||!this.ctx) return;
-    this.tickRunning=true; this._doTick();
-  },
-  _doTick:function(){
-    if(!this.tickRunning) return;
-    var self=this;
-    if(soundEnabled && self.ctx){
-      try{
-        var o=self.ctx.createOscillator(), g=self.ctx.createGain();
-        // Tone frequency: 50Hz (slow=deep rumble) → 200Hz (fast=high purr)
-        var freq=100+(self.tickSpeed-1)*42.8; // speed1→100Hz, speed8→400Hz (doubled)
-        o.type='triangle'; o.frequency.value=freq;
-        g.gain.setValueAtTime(0.20,self.ctx.currentTime); // 2× louder
-        g.gain.exponentialRampToValueAtTime(0.001,self.ctx.currentTime+0.025);
-        o.connect(g); g.connect(self.ctx.destination);
-        o.start(); o.stop(self.ctx.currentTime+0.025);
-      }catch(e){}
+var audio = {
+  // The AudioContext is the "factory" that creates all sound generators.
+  // Created lazily on first user interaction (browsers require this).
+  ctx: null,
+
+  // Off-road warning siren state
+  warnOsc: null, warnGain: null, warnLfo: null, warnOn: false,
+
+  // ─── ENGINE STATE ────────────────────────────────────────────
+  // The engine is ONE persistent oscillator that runs the whole game.
+  // We just change its frequency and volume as speed changes.
+  // This keeps it feeling continuous, like a real engine, instead of
+  // the previous stuttery "tick-tick-tick" approach.
+  engineOsc:  null, // the oscillator that generates the buzzing tone
+  engineGain: null, // volume control (gain node) for the engine
+  engineOn:   false,
+
+  // init() — must run on first user interaction (click/tap/key).
+  // Browsers block audio until then. Calling it later is harmless
+  // (the if-guard makes it a no-op once initialised).
+  init: function () {
+    if (!this.ctx) {
+      try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
     }
-    // Tick interval: speed 1→120ms (~8 ticks/sec), speed 8→25ms (~40 ticks/sec)
-    var ms=Math.round(120-(self.tickSpeed-1)*13.6);
-    ms=Math.max(25,Math.min(120,ms));
-    self.tickTimer=setTimeout(function(){ self._doTick(); },ms);
+    // If the context was suspended (e.g. tab backgrounded), wake it up.
+    if (this.ctx && this.ctx.state === 'suspended') {
+      try { this.ctx.resume(); } catch (e) {}
+    }
   },
-  updateEngine:function(speed){ this.tickSpeed=Math.max(1,speed); },
-  stopEngine:function(){
-    this.tickRunning=false;
-    if(this.tickTimer){ clearTimeout(this.tickTimer); this.tickTimer=null; }
+
+  // beep() — short upper-octave saw burst. Used as a UI confirmation.
+  beep: function () {
+    if (!soundEnabled || !this.ctx) return;
+    if (this.ctx.state === 'suspended') this.ctx.resume();
+    try {
+      var o = this.ctx.createOscillator(), g = this.ctx.createGain();
+      o.type = 'sawtooth'; o.frequency.value = 800;
+      g.gain.value = 0.15;
+      g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.2);
+      o.connect(g); g.connect(this.ctx.destination);
+      o.start(); o.stop(this.ctx.currentTime + 0.2);
+    } catch (e) {}
   },
-  screech:function(){
-    if(!soundEnabled||!this.ctx) return;
-    try{ var o=this.ctx.createOscillator(),g=this.ctx.createGain(); o.type='triangle'; o.frequency.value=1200; o.frequency.exponentialRampToValueAtTime(600,this.ctx.currentTime+0.2); g.gain.value=0.1; g.gain.exponentialRampToValueAtTime(0.001,this.ctx.currentTime+0.2); o.connect(g); g.connect(this.ctx.destination); o.start(); o.stop(this.ctx.currentTime+0.2); }catch(e){}
+
+  // startWarn() — the looping siren that plays while the car is off-road.
+  // It uses an LFO (low-frequency oscillator) to wobble the volume,
+  // creating the "wee-woo wee-woo" effect.
+  startWarn: function () {
+    if (this.warnOn || !soundEnabled || !this.ctx) return;
+    try {
+      this.warnOsc  = this.ctx.createOscillator();
+      this.warnGain = this.ctx.createGain();
+      this.warnLfo  = this.ctx.createOscillator();
+      var lG = this.ctx.createGain();
+      this.warnOsc.type = 'square'; this.warnOsc.frequency.value = 220;
+      this.warnGain.gain.value = 0.06;
+      this.warnLfo.frequency.value = 8;        // 8Hz wobble
+      lG.gain.value = 0.06;
+      this.warnLfo.connect(lG); lG.connect(this.warnGain.gain);
+      this.warnLfo.start();
+      this.warnOsc.connect(this.warnGain);
+      this.warnGain.connect(this.ctx.destination);
+      this.warnOsc.start();
+      this.warnOn = true;
+    } catch (e) {}
+  },
+
+  stopWarn: function () {
+    if (!this.warnOn) return;
+    try { this.warnLfo.stop(); this.warnOsc.stop(); } catch (e) {}
+    this.warnOn = false;
+    this.warnOsc = null; this.warnGain = null; this.warnLfo = null;
+  },
+
+  // ─── ENGINE: HAKAN'S SAWTOOTH + WAVESHAPER MODULE ────────────
+  // The chain is:    sawtooth oscillator → distortion → gain → speakers
+  //
+  //   sawtooth: a "buzzy" wave with lots of harmonics (engine character)
+  //   waveshaper: bends the wave shape using a math curve, adding a
+  //               grittier, warmer "engine block" timbre on top of the saw
+  //   gain: just a volume control we can ramp up and down smoothly
+  //
+  // The engine starts silent (gain=0), then updateEngine() ramps the gain
+  // up smoothly as the car begins moving. The frequency moves from
+  // ~55 Hz (idle) up to ~190 Hz (top speed) — a low growl, not a whine.
+  startEngine: function () {
+    if (this.engineOn || !soundEnabled || !this.ctx) return;
+    try {
+      var ctx = this.ctx;
+
+      // (1) The oscillator — generates the raw sawtooth buzz.
+      this.engineOsc = ctx.createOscillator();
+      this.engineOsc.type = 'sawtooth';
+      this.engineOsc.frequency.value = 60;     // starting frequency (idle-ish)
+
+      // (2) The waveshaper — bends the sawtooth's shape through a math
+      //     curve. The formula `((π+60)·x) / (π+60·|x|)` is a soft-clip
+      //     distortion: it squashes the loud peaks but leaves quiet parts
+      //     alone, which is what gives a real engine its "throaty" sound.
+      var dist  = ctx.createWaveShaper();
+      var curve = new Float32Array(256);
+      for (var i = 0; i < 256; i++) {
+        var x = (i * 2) / 256 - 1;             // x runs from -1 to +1
+        curve[i] = ((Math.PI + 60) * x) / (Math.PI + 60 * Math.abs(x));
+      }
+      dist.curve = curve;
+
+      // (3) The gain node — final volume control. Starts at 0 (silent).
+      this.engineGain = ctx.createGain();
+      this.engineGain.gain.value = 0;
+
+      // Wire the chain: oscillator → distortion → gain → speakers
+      this.engineOsc.connect(dist);
+      dist.connect(this.engineGain);
+      this.engineGain.connect(ctx.destination);
+
+      // Start the oscillator running. It plays continuously until
+      // stopEngine() is called. We control the SOUND with gain only.
+      this.engineOsc.start();
+      this.engineOn = true;
+    } catch (e) {}
+  },
+
+  // updateEngine(speed) — called every frame from the game loop with
+  // the current speed (km/h, range 10–220).
+  //
+  // We map speed to two things:
+  //   - frequency: how high-pitched the engine sounds  (55 → 190 Hz)
+  //   - gain:      how loud it plays                    (0.12 → 0.32)
+  //
+  // setTargetAtTime(target, now, timeConstant) smooths the change so
+  // the pitch glides instead of snapping — sounds way more natural.
+  // The 0.08 time constant means it reaches the new value in ~80ms.
+  updateEngine: function (speed) {
+    if (!this.engineOn || !this.ctx) return;
+    var ctx = this.ctx;
+    var t = Math.min(speed / SPEED_MAX_KMH, 1);      // 0..1 across the speed range
+    try {
+      this.engineOsc.frequency.setTargetAtTime(55 + 135 * t, ctx.currentTime, 0.08);
+      // Engine is silent if speed is essentially zero, otherwise audible.
+      var targetGain = speed > 2 ? (0.12 + t * 0.20) : 0;
+      this.engineGain.gain.setTargetAtTime(targetGain, ctx.currentTime, 0.08);
+    } catch (e) {}
+  },
+
+  // stopEngine() — fades the volume to zero quickly, then stops the
+  // oscillator. The fade prevents an audible "click" at the end.
+  stopEngine: function () {
+    if (!this.engineOn || !this.ctx) return;
+    var ctx = this.ctx;
+    try {
+      // Fade gain to 0 in 80ms
+      this.engineGain.gain.cancelScheduledValues(ctx.currentTime);
+      this.engineGain.gain.setValueAtTime(this.engineGain.gain.value, ctx.currentTime);
+      this.engineGain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.08);
+      // Stop the oscillator just after the fade completes
+      this.engineOsc.stop(ctx.currentTime + 0.10);
+    } catch (e) {}
+    this.engineOn = false;
+    this.engineOsc = null;
+    this.engineGain = null;
+  },
+
+  // screech() — a one-shot "tire scream" sound. Plays the moment the
+  // car leaves the road. Pitch slides DOWN over 200ms which gives the
+  // braking-skid feel.
+  screech: function () {
+    if (!soundEnabled || !this.ctx) return;
+    try {
+      var o = this.ctx.createOscillator(), g = this.ctx.createGain();
+      o.type = 'triangle';
+      o.frequency.value = 1200;
+      o.frequency.exponentialRampToValueAtTime(600, this.ctx.currentTime + 0.2);
+      g.gain.value = 0.1;
+      g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.2);
+      o.connect(g); g.connect(this.ctx.destination);
+      o.start(); o.stop(this.ctx.currentTime + 0.2);
+    } catch (e) {}
   }
 };
 
@@ -1064,13 +1248,59 @@ function mulberry32(seed){
 var rng=mulberry32(ROAD_SEED);
 
 // ═══════════════════════════════════════════════════════════════
-// CONSTANTS
+// CONSTANTS — game tuning lives here. Change a number here, the whole
+// game's feel changes. Each constant is commented in plain English so
+// you can experiment without breaking anything.
 // ═══════════════════════════════════════════════════════════════
-var SEG=6, RBW=240, RMN=150, RMX=340, TSEGS=16000;
-var BTN_STEP=5, SP=4.5, CAR_Y_FRAC=0.88, CW2=44, CH2=72;
-var COL_GRASS='#2d6a1e', COL_GRASS2='#2a6019';
-var COL_ROAD='#3a3a46',  COL_ROAD2='#3d3d4a';
-var COL_LANE='#555566',  COL_EDGE='#f59e0b', COL_SHOULDER='#4a4020';
+
+// ─── Road / car geometry ────────────────────────────────────────
+var SEG       = 6;           // height in pixels of one road segment
+var RBW       = 240;         // base road width (pixels) before sine variation
+var RMN       = 150;         // minimum road width allowed
+var RMX       = 340;         // maximum road width allowed
+var TSEGS     = 16000;       // total segments generated per run (long enough for any duration)
+var BTN_STEP  = 5;           // how many slider units the L/R buttons move per click
+var SP        = 4.5;         // input → physics steering scale (raw input * SP = wheel angle)
+var CAR_Y_FRAC= 0.88;        // car's vertical position on screen (88% from top)
+var CW2       = 44;          // car sprite half-width  (pixels)
+var CH2       = 72;          // car sprite half-height (pixels)
+
+// Road colors (paint values used by draw())
+var COL_GRASS    = '#2d6a1e', COL_GRASS2 = '#2a6019';
+var COL_ROAD     = '#3a3a46', COL_ROAD2  = '#3d3d4a';
+var COL_LANE     = '#555566';
+var COL_EDGE     = '#f59e0b';   // bright orange road edge stripe
+var COL_SHOULDER = '#4a4020';   // gravel shoulder color
+
+// ─── UI-FACING vs INTERNAL SCALES ──────────────────────────────
+// The user sees car-like numbers (Speed 10–220 km/h, Delay 1–10 levels).
+// The physics underneath want smaller, game-tuned numbers.
+// These constants do the conversion so the UI can stay friendly while the
+// physics stay tight.
+var DELAY_MAX              = 10;   // Max delay LEVEL the user can pick (slider max)
+var DELAY_FRAMES_PER_LEVEL = 3;    // Each delay level = N animation frames in the queue.
+                                   //   So level 10 → 30 frames lag (~0.5s @ 60fps).
+                                   //   This preserves the dramatic "drunk driver" feel
+                                   //   even though the slider only goes to 10.
+var SPEED_MAX_KMH          = 220;  // Top speed shown in the UI (km/h, like a real car)
+var SPEED_VISUAL_DIVISOR   = 28;   // Convert km/h → pixels-per-frame for road scrolling.
+                                   //   220 / 28 ≈ 7.86 px/frame (matches old max of 8).
+                                   //   10  / 28 ≈ 0.36 px/frame (slow but still moving).
+
+// ─── STEERING PHYSICS ──────────────────────────────────────────
+// These shape how the wheels respond to input.
+// Lower force + lower damping at high delay creates the "drunk driver"
+// feel that demonstrates Bullwhip. Tweak these to make the game easier
+// or harder.
+var STEER_FORCE_BASE       = 0.55; // Force sensitivity at delay=0 (instant response)
+var STEER_FORCE_DECAY      = 0.53; // How much force is lost as delay rises (df 0..1)
+var STEER_FORCE_MIN        = 0.02; // Floor — wheels still respond a tiny bit at max delay
+var STEER_DAMP_BASE        = 0.72; // Damping at delay=0 (wheels settle quickly)
+var STEER_DAMP_DECAY       = 0.70; // How much damping is lost as delay rises
+var STEER_DAMP_MIN         = 0.02; // Floor — almost no friction at max delay (overshoot)
+var STEER_VEL_LIMIT        = 6;    // Max angular velocity (prevents teleport)
+var STEER_RANGE_MULT       = 1.8;  // Wheel position bounds = ±SP*this
+var STEER_INPUT_SMOOTHING  = 0.20; // Smoothing factor when slider isn't actively dragged
 
 // ═══════════════════════════════════════════════════════════════
 // GAME STATE
@@ -1086,88 +1316,136 @@ var G={
 };
 
 // ═══════════════════════════════════════════════════════════════
-// ROAD GENERATION
+// ROAD GENERATION — builds the procedural curvy road for one run
 // ═══════════════════════════════════════════════════════════════
+// genRoad() pre-computes the entire road shape up-front (one big array
+// of segments) instead of generating it on-the-fly. This keeps the game
+// loop fast and lets us seed the random number generator so every run
+// has the SAME road — fair comparisons between runs.
+//
+// Each segment stores two values:
+//   ox — horizontal offset of the road's center line (curves)
+//   w  — width of the road at that segment (it gets narrower/wider)
+//
+// The road shape is a SUM of sine waves at different frequencies and
+// amplitudes. This is a classic trick: a few sines added together look
+// indistinguishable from "real" winding country roads.
 function genRoad(){
-  rng=mulberry32(ROAD_SEED); G.road=[]; G.hazards=[];
+  // Reset the seeded RNG so each call produces the IDENTICAL road.
+  rng = mulberry32(ROAD_SEED);
+  G.road = [];
+  G.hazards = [];
 
-  // Layered sine waves — smooth curves that stay in bounds
-  // Max theoretical sum: 220+120+55+22+8 = 425px
-  // With car at max drift (~80px), road edge at ~505px from center
-  // Canvas half = 600px, road half-width min=75, shoulder=18 → need 507px max → safe
-  var layers=[
-    {freq:1/1100, amp:220, ph:rng()*Math.PI*2},
-    {freq:1/500,  amp:120, ph:rng()*Math.PI*2},
-    {freq:1/250,  amp:55,  ph:rng()*Math.PI*2},
-    {freq:1/130,  amp:22,  ph:rng()*Math.PI*2},
-    {freq:1/70,   amp:8,   ph:rng()*Math.PI*2}
-  ];
-  // Width variation
-  var wLayers=[
-    {freq:1/900,  amp:50, ph:rng()*Math.PI*2},
-    {freq:1/350,  amp:30, ph:rng()*Math.PI*2},
-    {freq:1/150,  amp:15, ph:rng()*Math.PI*2}
+  // ─── CURVE LAYERS ────────────────────────────────────────────
+  // Each layer is one sine wave. Different frequencies make different
+  // kinds of curves: low freq = long sweeping bends, high freq = small
+  // wiggles. Amplitude controls how far the road bends in pixels.
+  // Math: total max sway = 220+120+55+22+8 = 425px, fits canvas.
+  var layers = [
+    {freq:1/1100, amp:220, ph:rng()*Math.PI*2},  // big sweeping bends
+    {freq:1/500,  amp:120, ph:rng()*Math.PI*2},  // medium curves
+    {freq:1/250,  amp:55,  ph:rng()*Math.PI*2},  // small turns
+    {freq:1/130,  amp:22,  ph:rng()*Math.PI*2},  // wiggles
+    {freq:1/70,   amp:8,   ph:rng()*Math.PI*2}   // micro-jitter
   ];
 
-  var SHOULDER=18, MARGIN=10;
+  // ─── WIDTH LAYERS ────────────────────────────────────────────
+  // Same idea but for width — road widens and narrows organically.
+  var wLayers = [
+    {freq:1/900, amp:50, ph:rng()*Math.PI*2},
+    {freq:1/350, amp:30, ph:rng()*Math.PI*2},
+    {freq:1/150, amp:15, ph:rng()*Math.PI*2}
+  ];
+
+  var SHOULDER=18, MARGIN=10;  // pixel buffers from canvas edge
 
   for(var i=0;i<TSEGS;i++){
-    // Ramp: first 80 segs straight, then smoothstep to full over 500 segs
+    // ─── RAMP IN ───
+    // First 80 segments are perfectly straight (so the player can settle in),
+    // then we smoothly ramp curves up to full strength over 500 segments.
+    // The smoothstep formula `r*r*(3-2*r)` gives a nice S-curve fade.
     var ramp;
     if(i<80) ramp=0;
     else ramp=Math.min(1,(i-80)/500);
-    ramp=ramp*ramp*(3-2*ramp);
+    ramp = ramp*ramp*(3-2*ramp);
 
+    // ─── SUM ALL CURVE LAYERS for this segment's center offset ───
     var off=0;
-    for(var li=0;li<layers.length;li++){
+    for(var li=0; li<layers.length; li++){
       var L=layers[li];
-      off+=Math.sin(i*L.freq*Math.PI*2+L.ph)*L.amp*ramp;
+      off += Math.sin(i*L.freq*Math.PI*2+L.ph) * L.amp * ramp;
     }
 
+    // ─── SUM ALL WIDTH LAYERS, then clamp to safe min/max ───
     var w=RBW;
-    for(var wi=0;wi<wLayers.length;wi++){
+    for(var wi=0; wi<wLayers.length; wi++){
       var W=wLayers[wi];
-      w+=Math.sin(i*W.freq*Math.PI*2+W.ph)*W.amp*ramp;
+      w += Math.sin(i*W.freq*Math.PI*2+W.ph) * W.amp * ramp;
     }
-    w=Math.max(RMN,Math.min(RMX,w));
+    w = Math.max(RMN, Math.min(RMX, w));
 
-    // Hard clamp: road edges must stay inside canvas even if car drifts
-    // Allow extra 100px margin for car drift from road center
-    var maxOff=CW/2 - w/2 - SHOULDER - MARGIN - 100;
+    // ─── SAFETY CLAMP ───
+    // Make sure the road doesn't curve so far that its edge falls
+    // outside the canvas. The 100px buffer leaves room for the car
+    // to drift even when the road is at its most extreme position.
+    var maxOff = CW/2 - w/2 - SHOULDER - MARGIN - 100;
     if(maxOff<0) maxOff=0;
-    off=Math.max(-maxOff,Math.min(maxOff,off));
+    off = Math.max(-maxOff, Math.min(maxOff, off));
 
-    G.road.push({ox:off,w:w});
-    if(i>200&&rng()<0.0013) G.hazards.push({si:i,ox:off+(rng()-0.5)*w*0.4,tp:rng()<0.5?'c':'t'});
+    G.road.push({ox:off, w:w});
+
+    // Sprinkle occasional hazards (cones/trees) near the edges.
+    // Skip the first 200 segments so the player isn't ambushed at the start.
+    if(i>200 && rng()<0.0013){
+      G.hazards.push({
+        si: i,                                   // segment index
+        ox: off + (rng()-0.5) * w * 0.4,         // horizontal position within road
+        tp: rng()<0.5 ? 'c' : 't'                // type: 'c'=cone, 't'=tree
+      });
+    }
   }
 }
 
 // ═══════════════════════════════════════════════════════════════
-// GAME CONTROL
+// GAME CONTROL — start, reset, end
 // ═══════════════════════════════════════════════════════════════
+// startGame() — called when the user taps the Play button on canvas.
+// Reads the current slider values, locks them, primes the steering-delay
+// queue, and kicks off the animation loop.
 function startGame(){
-  if(G.running) return; audio.init();
-  mo.classList.remove('vis');
-  document.body.classList.add('playing');
-  
+  if(G.running) return;
+  audio.init();                                   // unlock audio (must be in a click handler)
+  mo.classList.remove('vis');                     // hide the result modal if it's still up
+  document.body.classList.add('playing');         // CSS uses this to expand canvas full-screen
+
   btnMute.style.display = 'flex';
   btnResetTop.style.display = 'flex';
-  
+
   if(typeof chartMo !== 'undefined') chartMo.classList.remove('vis');
   wmo.classList.remove('vis');
-  
-  G.delay=parseInt(sDelay.value); G.baseSpeed=parseInt(sSpeed.value); G.gameDur=parseInt(sDur.value);
-  
-  // Set the active param text labels
+
+  // ─── Read slider values into game state ───
+  // sDelay is now 1–10 (UI-friendly scale).
+  // sSpeed is now 10–220 km/h (car-like scale).
+  G.delay     = parseInt(sDelay.value);                          // 1..10
+  G.baseSpeed = parseInt(sSpeed.value);                          // 10..220 km/h
+  G.gameDur   = parseInt(sDur.value);                            // seconds
+
+  // The internal queue depth is delay * DELAY_FRAMES_PER_LEVEL,
+  // so delay level 10 → 30 frames in the queue (~0.5s lag at 60fps).
+  // This preserves the dramatic "drunk driver" feel of the old delay=30.
+  G.delayFrames = G.delay * DELAY_FRAMES_PER_LEVEL;
+
+  // Show what the player picked (in km/h, like a real car dashboard)
   apDelayVal.textContent = G.delay;
-  apSpeedVal.textContent = G.baseSpeed;
-  apDurVal.textContent = G.gameDur + 's';
-  apHLVal.textContent = sFog.value + 'm';
-  
+  apSpeedVal.textContent = G.baseSpeed + ' km/h';
+  apDurVal.textContent   = G.gameDur + 's';
+  apHLVal.textContent    = sFog.value + 'm';
+
   // Let the browser complete layout (flex sizing) before reading dimensions
-  requestAnimationFrame(function(){
-    resizeCanvas(true);
-  });
+  requestAnimationFrame(function(){ resizeCanvas(true); });
+
+  // Reset all per-run state to a fresh start
   G.running=true; G.paused=false; G.gameTime=0; G.carX=0; G.scrollY=0;
   if(!gyroActive) G.sliderPos=0;
   G.smoothedInput=0; G.inputSteer=0; G.viscousSteer=0; G.steerVelocity=0; G.actualSteer=0;
@@ -1175,9 +1453,20 @@ function startGame(){
   G.wasOff=false; G.isOff=false; G.carOff=false; G.pathTrace=[]; G.skidMarks=[]; G.lastTS=0;
   if(!gyroActive) steerSlider.value=0;
   sStat.textContent=t('stDriving');
+
+  // Lock the config sliders so the player can't change them mid-run
+  // (mid-run changes would mess up the physics queue).
   sDelay.disabled=true; sSpeed.disabled=true; sDur.disabled=true; sFog.disabled=true;
-  for(var i=0;i<G.delay;i++) G.steerQueue.push(0);
-  genRoad(); audio.startEngine(); audio.updateEngine(G.baseSpeed); G.rafId=requestAnimationFrame(loop);
+
+  // Pre-fill the steering queue with zeroes so the very first input has
+  // the correct number of frames of lag (otherwise the first move would
+  // feel instant).
+  for(var i=0;i<G.delayFrames;i++) G.steerQueue.push(0);
+
+  genRoad();                                   // build the procedural road for this run
+  audio.startEngine();                          // start the persistent engine oscillator
+  audio.updateEngine(G.baseSpeed);              // set its pitch/volume to current speed
+  G.rafId=requestAnimationFrame(loop);          // begin the animation loop
 }
 
 function resetGame(){
@@ -1209,6 +1498,12 @@ function endGame(){
   resizeCanvas(true);
   var pct=G.totalFrames>0?(G.onFrames/G.totalFrames*100):100;
   G.results.push({dly:G.delay,spd:G.baseSpeed,dur:G.gameDur,fog:parseInt(sFog.value),on:pct,vio:G.violations});
+  // Persist results to localStorage so session history survives page reload
+  try{
+    // Cap stored history at 50 most recent entries to avoid unbounded growth
+    var toStore = G.results.length > 50 ? G.results.slice(-50) : G.results;
+    localStorage.setItem('bw_results', JSON.stringify(toStore));
+  }catch(e){}
   $id('mOn').textContent=pct.toFixed(1)+'%'; $id('mOff').textContent=(100-pct).toFixed(1)+'%';
   $id('mVio').textContent=G.violations; $id('mDel').textContent=G.delay;
   var mk=pct>=98?'msg98':pct>=90?'msg90':pct>=70?'msg70':'msg0';
@@ -1222,40 +1517,58 @@ function updHist(){
   if(!G.results.length) return;
   $id('rSec').classList.add('vis');
   var hdr=t('histHdr');
-  var h='<table style="width:100%;font-size:12px;border-collapse:collapse">';
-  h+='<tr style="color:var(--text3);text-align:left">'+hdr.map(function(s){return'<th style="padding:3px 5px">'+s+'</th>';}).join('')+'</tr>';
+  var h='<table class="hist-tbl">';
+  h+='<tr>'+hdr.map(function(s){return'<th>'+s+'</th>';}).join('')+'</tr>';
   G.results.forEach(function(r,i){
-    var c=r.on>=90?'#22c55e':r.on>=70?'#f97316':'#ef4444';
+    var pctClass = r.on>=90?'grn':r.on>=70?'org':'red';
     var fI = r.on>=92?t('finProfitIcon') : r.on>=60?t('finLossIcon') : t('finBankruptIcon');
     var fT = r.on>=92?t('fateProfit') : r.on>=60?t('fateLoss') : t('fateBankrupt');
-    var fC = r.on>=92?'#22c55e' : r.on>=60?'#f97316' : '#ef4444';
-    h+='<tr style="color:var(--text2)"><td style="padding:2px 5px">'+(i+1)+'</td><td style="padding:2px 5px">'+r.dly+'</td><td style="padding:2px 5px">'+r.spd+'</td><td style="padding:2px 5px">'+r.dur+'s</td><td style="padding:2px 5px;color:#a855f7">'+r.fog+'m</td><td style="padding:2px 5px;color:'+c+';font-weight:600">'+r.on.toFixed(1)+'%</td><td style="padding:2px 5px">'+r.vio+'</td><td style="padding:2px 5px;color:'+fC+';font-weight:600;white-space:nowrap">'+fI+' '+fT+'</td></tr>';
+    var fateClass = r.on>=92?'grn' : r.on>=60?'org' : 'red';
+    h+='<tr><td class="hist-num">'+(i+1)+'</td><td>'+r.dly+'</td><td>'+r.spd+'</td><td>'+r.dur+'s</td><td class="hist-fog">'+r.fog+'m</td><td class="hist-pct '+pctClass+'">'+r.on.toFixed(1)+'%</td><td>'+r.vio+'</td><td class="hist-fate '+fateClass+'">'+fI+' '+fT+'</td></tr>';
   });
   h+='</table>';
   var lo=G.results.filter(function(r){return r.dly<=2;}), hi=G.results.filter(function(r){return r.dly>=6;});
   if(lo.length&&hi.length){
     var aL=lo.reduce(function(a,b){return a+b.on;},0)/lo.length;
     var aH=hi.reduce(function(a,b){return a+b.on;},0)/hi.length;
-    if(aL>aH+5) h+='<p style="margin-top:8px;color:#f97316;font-size:12px"><strong>'+t('histPat').replace('{lo}',aL.toFixed(0)).replace('{hi}',aH.toFixed(0))+'</strong></p>';
+    if(aL>aH+5) h+='<p class="hist-pattern">'+t('histPat').replace('{lo}',aL.toFixed(0)).replace('{hi}',aH.toFixed(0))+'</p>';
   }
   $id('rTxt').innerHTML=h;
 }
 
 // ═══════════════════════════════════════════════════════════════
-// GAME LOOP
+// GAME LOOP — runs ~60 times per second while a run is active
 // ═══════════════════════════════════════════════════════════════
+// Browsers fire requestAnimationFrame about every 16ms (60fps). The `ts`
+// parameter is a timestamp in milliseconds. We use it to compute `dt`
+// (delta time since last frame) so the physics feel the same regardless
+// of frame rate.
+//
+// One pass through loop() does FOUR things:
+//   1. Decide where the wheels SHOULD be based on user input (steering)
+//   2. Apply the delay queue — what the wheels actually DO is delayed
+//   3. Move the car / scroll the road / check for off-road
+//   4. Repaint and queue up the next frame
 function loop(ts){
   if(!G.running) return;
+
+  // If paused, don't advance physics — but still draw a "PAUSED" overlay.
   if(G.paused){
     audio.stopEngine(); audio.stopWarn();
     draw();
     drawPausedOverlay();
-    // Don't schedule next frame — resume will restart the loop
+    // Don't schedule next frame — resume() will restart the loop.
     return;
   }
+
+  // dt = milliseconds since previous frame. Capped at 33ms (~30fps) so
+  // a hiccup (e.g. tab backgrounded) doesn't teleport the car.
   if(!G.lastTS) G.lastTS=ts;
-  var dt=Math.min(ts-G.lastTS,33); G.lastTS=ts;
-  G.gameTime+=dt/1000;
+  var dt = Math.min(ts - G.lastTS, 33);
+  G.lastTS = ts;
+
+  // Advance the run timer. When we hit gameDur, the run ends.
+  G.gameTime += dt/1000;
   if(G.gameTime>=G.gameDur){ G.gameTime=G.gameDur; sTime.textContent=G.gameTime.toFixed(1)+'s'; pFill.style.width='100%'; draw(); endGame(); return; }
   sTime.textContent=G.gameTime.toFixed(1)+'s';
   pFill.style.width=(G.gameTime/G.gameDur*100).toFixed(1)+'%';
@@ -1265,47 +1578,57 @@ function loop(ts){
 
   var rawInput;
   if(G.sliderActive && !gyroActive){ rawInput=(parseInt(steerSlider.value)/100)*SP; G.sliderPos=parseInt(steerSlider.value); G.smoothedInput=rawInput; }
-  else { var st=(G.sliderPos/100)*SP; G.smoothedInput+=(st-G.smoothedInput)*0.20; rawInput=G.smoothedInput; steerSlider.value=Math.round(G.sliderPos); }
+  else { var st=(G.sliderPos/100)*SP; G.smoothedInput+=(st-G.smoothedInput)*STEER_INPUT_SMOOTHING; rawInput=G.smoothedInput; steerSlider.value=Math.round(G.sliderPos); }
   G.inputSteer=rawInput;
 
   // ═══════════════════════════════════════════════════════════════
   // PHYSICS: Steering momentum + damping
   // ═══════════════════════════════════════════════════════════════
-  // df: delay factor (0 to 2) — normalized against max delay of 30 frames
-  var df=G.delay/30;
-  
-  // fs: force sensitivity — how responsive wheels are to input
-  //   at delay=0: full response (0.55)
-  //   at delay=30: minimal response (0.04), wheels ignore input
-  // Higher delay = lower force sensitivity = wheels resist steering changes
-  var fs=G.delay===0?0.55:Math.max(0.02,0.55-df*0.53);
-  
-  // dm: damping/friction multiplier — how much wheel velocity is lost per frame
-  //   at delay=0: high friction (0.72), wheels stop quickly
-  //   at delay=30: almost no friction (0.02), wheels keep spinning indefinitely
-  // Lower damping = more momentum = wheel overshoots longer = exaggerated delay effect
-  var dm=G.delay===0?0.72:Math.max(0.02,0.72-df*0.70);
-  
+  // df: delay factor (0..1) — normalized against DELAY_MAX
+  var df=G.delay/DELAY_MAX;
+
+  // fs: force sensitivity — how responsive wheels are to input.
+  //   delay=1:  near-full response
+  //   delay=10: minimal response — wheels barely respond to input
+  // The Math.max() floor stops fs from going negative at extreme delays.
+  var fs = Math.max(STEER_FORCE_MIN, STEER_FORCE_BASE - df*STEER_FORCE_DECAY);
+
+  // dm: damping/friction multiplier — how much wheel velocity is lost per frame.
+  //   delay=1:  high friction → wheels stop quickly
+  //   delay=10: near-zero friction → wheels keep spinning (overshoot)
+  var dm = Math.max(STEER_DAMP_MIN, STEER_DAMP_BASE - df*STEER_DAMP_DECAY);
+
   // steerVelocity: angular acceleration of the wheels (how fast they turn)
   // Formula: vel = vel * damping + (targetPos - currentPos) * forceSensitivity
-  // This creates inertia: wheels have "mass" and don't respond instantly
-  G.steerVelocity=G.steerVelocity*dm+(G.inputSteer-G.viscousSteer)*fs;
-  
+  // This creates inertia: wheels have "mass" and don't respond instantly.
+  G.steerVelocity = G.steerVelocity*dm + (G.inputSteer - G.viscousSteer)*fs;
+
   // Clamp velocity to physical limits (max turn speed)
-  G.steerVelocity=Math.max(-6,Math.min(6,G.steerVelocity));
-  
+  G.steerVelocity = Math.max(-STEER_VEL_LIMIT, Math.min(STEER_VEL_LIMIT, G.steerVelocity));
+
   // viscousSteer: actual wheel position (accumulates velocity over time)
-  // Integrated with dt smoothing so physics feel consistent at 60fps
-  G.viscousSteer+=G.steerVelocity*(dt/16);
-  
-  // Clamp position to valid steering range (SP = 4.5, limits ±1.8x that)
-  G.viscousSteer=Math.max(-SP*1.8,Math.min(SP*1.8,G.viscousSteer));
+  // Integrated with dt smoothing so physics feel consistent at 60fps.
+  G.viscousSteer += G.steerVelocity*(dt/16);
 
-  while(G.steerQueue.length<G.delay) G.steerQueue.unshift(0);
+  // Clamp position to valid steering range
+  G.viscousSteer = Math.max(-SP*STEER_RANGE_MULT, Math.min(SP*STEER_RANGE_MULT, G.viscousSteer));
+
+  // ─── Apply the steering-delay queue ──────────────────────────
+  // viscousSteer is what the wheels WANT to do right now. But we want
+  // a delay between input and what shows up on screen — that's the whole
+  // point of the game. So we push every frame's wheel position into a
+  // queue and read out the value that's `delayFrames` old.
+  while(G.steerQueue.length<G.delayFrames) G.steerQueue.unshift(0);
   G.steerQueue.push(G.viscousSteer);
-  G.actualSteer=(G.steerQueue.length>G.delay)?G.steerQueue.shift():G.viscousSteer;
+  G.actualSteer=(G.steerQueue.length>G.delayFrames)?G.steerQueue.shift():G.viscousSteer;
 
-  G.carX+=G.actualSteer*(dt/16); G.scrollY+=G.baseSpeed*(dt/16);
+  // ─── Move the car and scroll the road ────────────────────────
+  // carX moves left/right based on the (delayed) steering.
+  // scrollY moves the world down past the car. Since baseSpeed is now
+  // 10–220 km/h (car-like UI), divide by SPEED_VISUAL_DIVISOR to get a
+  // sensible pixels-per-frame scroll rate.
+  G.carX    += G.actualSteer * (dt/16);
+  G.scrollY += (G.baseSpeed / SPEED_VISUAL_DIVISOR) * (dt/16);
 
   var sfb=Math.round((1-CAR_Y_FRAC)*CH/SEG);
   var carWorldSeg=Math.floor(G.scrollY/SEG)+sfb;
@@ -1358,6 +1681,9 @@ function loop(ts){
 // ═══════════════════════════════════════════════════════════════
 // DRAW
 // ═══════════════════════════════════════════════════════════════
+// draw() — full per-frame render during a live run. Reads from G state
+//          (carX, scrollY, pathTrace, skidMarks, hazards) and paints the
+//          road, path overlay, skid marks, and car. Called from loop().
 function draw(){
   ctx.fillStyle=COL_GRASS; ctx.fillRect(0,0,CW,CH);
   var sfb=Math.round((1-CAR_Y_FRAC)*CH/SEG);
@@ -1456,6 +1782,11 @@ function rr(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.lineTo(x+w-r,y); c.q
 // State: 0=ready, 1=done. Drawn in drawStatic, hit-tested on canvas click.
 var PLAY_BTN = { cx:0, cy:0, r:0 }; // updated each drawStatic call
 
+// drawStatic() — idle/non-running render. Used before a run starts and
+//                after a run ends. Draws the road preview at the start
+//                segments plus the canvas play button (PLAY_BTN). Does
+//                NOT animate, scroll, or read live input — keep it cheap;
+//                it gets called from theme/lang/font-size changes too.
 function drawStatic(){
     // Draw actual road data so the pre-game view matches what gameplay shows
     if(!G.road || G.road.length===0) genRoad(); // ensure road exists
@@ -1761,24 +2092,30 @@ function showChart(){
   $id('chAmpSub').textContent=t('chartAmpSub').replace('{ratio}',ratio.toFixed(1));
 
   // ═══ SCENARIO PARAMETERS — translated to real-world units ═══
-  var dLvl=paramLevel(G.delay,0,30);
-  var sLvl=paramLevel(G.baseSpeed,1,8);
-  var hVal=parseInt(sFog.value);
-  var hLvl=hVal>=80?{key:'pLo',cls:'lo'}:hVal>=50?{key:'pMd',cls:'md'}:{key:'pHi',cls:'hi'};
+  // paramLevel returns a {key, cls} based on where the value sits in its range.
+  // Update these ranges when the slider min/max change (delay 1-10, speed 10-220).
+  var dLvl = paramLevel(G.delay,     1, 10);
+  var sLvl = paramLevel(G.baseSpeed, 10, 220);
+  var hVal = parseInt(sFog.value);
+  var hLvl = hVal>=80 ? {key:'pLo', cls:'lo'} : hVal>=50 ? {key:'pMd', cls:'md'} : {key:'pHi', cls:'hi'};
   // Note: for headlight, high value = good, so label is inverted for "risk"
 
   // Real-world translations:
-  // Delay: each unit ≈ 1 day of information lag (0=real-time, 30=1 month)
-  var delayDays=G.delay;
-  var delayReal=G.delay===0?(lang==='tr'?'Gerçek zamanlı':'Real-time'):
-    (delayDays<=7?(delayDays+(lang==='tr'?' gün gecikme':' days lag')):
-    (Math.round(delayDays/7)+(lang==='tr'?' hafta gecikme':' weeks lag')));
+  // Delay levels (1-10) → information-lag in days. Level 1 = real-time,
+  // level 10 = ~30 days (monthly manual paperwork). Each level adds ~3 days.
+  var delayDays = (G.delay - 1) * 3;
+  var delayReal = G.delay <= 1
+    ? (lang==='tr' ? 'Gerçek zamanlı' : 'Real-time')
+    : (delayDays <= 7
+        ? (delayDays + (lang==='tr' ? ' gün gecikme' : ' days lag'))
+        : (Math.round(delayDays/7) + (lang==='tr' ? ' hafta gecikme' : ' weeks lag')));
 
-  // Speed: 1=stable market, 8=extreme volatility
-  var speedReal=G.baseSpeed<=2?(lang==='tr'?'Sabit piyasa (temel tüketim)':'Stable market (staple goods)'):
-    G.baseSpeed<=4?(lang==='tr'?'Normal dalgalanma (mevsimsel)':'Normal fluctuation (seasonal)'):
-    G.baseSpeed<=6?(lang==='tr'?'Dalgalı piyasa (moda/trend)':'Volatile market (fashion/trend)'):
-    (lang==='tr'?'Aşırı dalgalanma (kriz/pandemi)':'Extreme volatility (crisis/pandemic)');
+  // Speed (10-220 km/h) → market volatility category.
+  // Cutoffs are roughly: <60 stable, <120 normal, <180 volatile, ≥180 crisis.
+  var speedReal = G.baseSpeed < 60   ? (lang==='tr' ? 'Sabit piyasa (temel tüketim)'    : 'Stable market (staple goods)')
+                : G.baseSpeed < 120  ? (lang==='tr' ? 'Normal dalgalanma (mevsimsel)'   : 'Normal fluctuation (seasonal)')
+                : G.baseSpeed < 180  ? (lang==='tr' ? 'Dalgalı piyasa (moda/trend)'     : 'Volatile market (fashion/trend)')
+                                     : (lang==='tr' ? 'Aşırı dalgalanma (kriz/pandemi)' : 'Extreme volatility (crisis/pandemic)');
 
   // Headlight: 20m=2 weeks forecast, 100m=10 weeks forecast
   var forecastWeeks=Math.round(hVal/10);
@@ -1831,12 +2168,13 @@ function showChart(){
     '<div class="ch-fin-detail">'+finDetail+'</div>';
 
   // ═══ ADVICE ═══
+  // Show targeted recommendations only for the things the player did poorly on.
   var advHtml='<div class="adv-head">'+t('advHead')+'</div>';
-  if(G.delay>2) advHtml+='<p>'+t('advDelay')+'</p>';
-  if(hVal<70) advHtml+='<p>'+t('advHeadlight')+'</p>';
-  if(G.baseSpeed>=5) advHtml+='<p>'+t('advSpeed')+'</p>';
-  advHtml+='<p>'+t('advGeneral')+'</p>';
-  $id('chAdvice').innerHTML=advHtml;
+  if(G.delay > 2)        advHtml += '<p>' + t('advDelay')     + '</p>';   // delay 3+ on 1-10 scale
+  if(hVal < 70)          advHtml += '<p>' + t('advHeadlight') + '</p>';   // headlight under 70m
+  if(G.baseSpeed >= 140) advHtml += '<p>' + t('advSpeed')     + '</p>';   // 140+ km/h on 10-220 scale
+  advHtml += '<p>' + t('advGeneral') + '</p>';
+  $id('chAdvice').innerHTML = advHtml;
 
   // ═══ EXPLANATION ═══
   var explKey;
@@ -1887,17 +2225,27 @@ function addStepBtn(btn,dir){
 }
 addStepBtn(bL,-1); addStepBtn(bR,1);
 
-steerSlider.addEventListener('mousedown', function(){ if(!gyroActive) G.sliderActive=true; audio.init(); });
-steerSlider.addEventListener('touchstart', function(){ if(!gyroActive) G.sliderActive=true; audio.init(); },{passive:true});
-document.addEventListener('mouseup',     function(){ if(!gyroActive) G.sliderActive=false; });
-document.addEventListener('touchend',    function(){ if(!gyroActive) G.sliderActive=false; });
-document.addEventListener('touchcancel', function(){ if(!gyroActive) G.sliderActive=false; });
+// ─── SLIDER DRAG STATE ───────────────────────────────────────
+// We track whether the user is actively dragging the steering slider
+// (mouse/touch down). When NOT dragging, the slider position smoothly
+// drifts back via the input-smoothing code in loop().
+steerSlider.addEventListener('mousedown',  function(){ if(!gyroActive) G.sliderActive=true;  audio.init(); });
+steerSlider.addEventListener('touchstart', function(){ if(!gyroActive) G.sliderActive=true;  audio.init(); }, {passive:true});
+document.addEventListener('mouseup',       function(){ if(!gyroActive) G.sliderActive=false; });
+document.addEventListener('touchend',      function(){ if(!gyroActive) G.sliderActive=false; });
+document.addEventListener('touchcancel',   function(){ if(!gyroActive) G.sliderActive=false; });
 
-// Gyro Logic
-var wModeMan = $id('wModeMan');
+// ═══════════════════════════════════════════════════════════════
+// GYRO MODE — tilt your phone left/right to steer
+// ═══════════════════════════════════════════════════════════════
+// On mobile, steering by tilting feels more like a real driving game.
+// iOS requires explicit permission (DeviceOrientationEvent.requestPermission)
+// triggered by a user click — that's why this lives behind a button.
+var wModeMan  = $id('wModeMan');
 var wModeGyro = $id('wModeGyro');
-var cpanel = document.querySelector('.cpanel');
+var cpanel    = document.querySelector('.cpanel');
 
+// Manual mode = use slider/buttons/keyboard
 wModeMan.addEventListener('click', function() {
   gyroActive = false;
   wModeMan.classList.add('act');
@@ -1907,24 +2255,29 @@ wModeMan.addEventListener('click', function() {
   steerSlider.value = 0;
 });
 
+// Gyro mode = tilt phone. Handle iOS's permission prompt gracefully.
 wModeGyro.addEventListener('click', function() {
-  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+  // iOS 13+ requires explicit user permission for orientation events
+  if (typeof DeviceOrientationEvent !== 'undefined' &&
+      typeof DeviceOrientationEvent.requestPermission === 'function') {
     DeviceOrientationEvent.requestPermission()
       .then(function(permissionState) {
         if (permissionState === 'granted') {
           enableGyro();
         } else {
           alert(t('gyroErr'));
-          wModeMan.click();
+          wModeMan.click();        // fall back to manual
         }
       })
-      .catch(function(err) { 
-        alert(t('gyroErr')); 
+      .catch(function(err) {
+        alert(t('gyroErr'));
         wModeMan.click();
       });
   } else if (window.DeviceOrientationEvent) {
+    // Android & older browsers — no permission needed
     enableGyro();
   } else {
+    // Device doesn't support orientation at all
     alert(t('gyroErr'));
     wModeMan.click();
   }
@@ -1934,25 +2287,29 @@ function enableGyro() {
   gyroActive = true;
   wModeGyro.classList.add('act');
   wModeMan.classList.remove('act');
-  cpanel.classList.add('gyro-mode');
+  cpanel.classList.add('gyro-mode');     // CSS hides L/R buttons in gyro mode
   G.sliderPos = 0;
   steerSlider.value = 0;
 }
 
+// Listen for phone-tilt events. `gamma` is the side-to-side tilt:
+//   -90° = phone rotated left,  0° = flat,  +90° = rotated right.
+// We map ±40° to ±100 (slider units) for comfortable steering range.
 window.addEventListener('deviceorientation', function(e) {
   if (!gyroActive || !e.gamma) return;
-  // gamma is roughly -90 to 90. Let's map -45 to +45 to -100 to 100
-  var tilt = e.gamma; // left to right
-  var val = (tilt / 40) * 100;
+  var tilt = e.gamma;                     // tilt in degrees
+  var val  = (tilt / 40) * 100;           // map ±40° → ±100
   G.sliderPos = Math.max(-100, Math.min(100, val));
 });
 
-sDelay.addEventListener('input', function(){ $id('dDelay').textContent=sDelay.value; });
-sSpeed.addEventListener('input', function(){ $id('dSpeed').textContent=sSpeed.value; });
-sDur.addEventListener('input',   function(){ $id('dDur').textContent=sDur.value+'s'; });
+// ─── SLIDER VALUE DISPLAYS ───────────────────────────────────
+// As the user drags any config slider, update the small number next to it.
+sDelay.addEventListener('input', function(){ $id('dDelay').textContent = sDelay.value; });
+sSpeed.addEventListener('input', function(){ $id('dSpeed').textContent = sSpeed.value + ' km/h'; });
+sDur.addEventListener('input',   function(){ $id('dDur').textContent   = sDur.value + 's'; });
 
 $id('themeBtn').addEventListener('click', toggleTheme);
-$id('wThemeBtn').addEventListener('click', toggleTheme);
+var _wThemeBtn = $id('wThemeBtn'); if(_wThemeBtn) _wThemeBtn.addEventListener('click', toggleTheme);
 $id('chThemeBtn').addEventListener('click', toggleTheme);
 $id('btnEN').addEventListener('click',  function(){ setLang('en'); });
 $id('btnTR').addEventListener('click',  function(){ setLang('tr'); });
@@ -2080,7 +2437,7 @@ function exportLearnings(){
   var adviceHtml = '';
   if(G.delay>2) adviceHtml+='<div style="margin-bottom:2px">'+t('advDelay')+'</div>';
   if(parseInt(sFog.value)<70) adviceHtml+='<div style="margin-bottom:2px">'+t('advHeadlight')+'</div>';
-  if(G.baseSpeed>=5) adviceHtml+='<div style="margin-bottom:2px">'+t('advSpeed')+'</div>';
+  if(G.baseSpeed>=140) adviceHtml+='<div style="margin-bottom:2px">'+t('advSpeed')+'</div>';
   adviceHtml+='<div style="margin-top:2px">'+t('advGeneral')+'</div>';
   
   // Create an explicit light-mode container for printing. Max compact fit.
@@ -2189,14 +2546,10 @@ function exportLearnings(){
 // ═══════════════════════════════════════════════════════════════
 function applyWelcomeText(){
   safeSet('wTitle', t('wTitle'));
-  safeSet('wVer',   t('wVer'));
-  safeSet('wHint', t('wHint'), true);
-  safeSet('ws1', t('ws1'), true); safeSet('ws2', t('ws2'), true);
-  safeSet('ws3', t('ws3'), true); safeSet('ws4', t('ws4'), true);
-  safeSet('ws5', t('ws5'), true);
-  safeSet('wModeMan', t('wModeMan'));
+  safeSet('wBody',  t('wBody'), true);
+  safeSet('wModeMan',  t('wModeMan'));
   safeSet('wModeGyro', t('wModeGyro'));
-  safeSet('wDismiss', t('wDismiss'));
+  safeSet('wDismiss',  t('wDismiss'));
   // sync welcome lang toggle buttons
   var btnEN = document.getElementById('wBtnEN');
   var btnTR = document.getElementById('wBtnTR');
@@ -2233,10 +2586,21 @@ try{
   if(savedFS === 'm' || savedFS === 'l') setFontSize(savedFS);
 }catch(e){}
 
+// Restore session history from previous runs
+try{
+  var savedResults = localStorage.getItem('bw_results');
+  if(savedResults){
+    var parsed = JSON.parse(savedResults);
+    if(Array.isArray(parsed)) G.results = parsed;
+  }
+}catch(e){}
+
 applyText();
 resizeCanvas(false);
 updateFogOverlay();
 drawStatic();
+// Render restored history if any
+if(G.results.length) updHist();
 
 setTimeout(showWelcome, 80);
 
