@@ -22,4 +22,6 @@ Built using vanilla HTML5 Canvas and the Web Audio API, entirely contained withi
 - **Audio Isolated:** Audio context runs independently, generating synthetic hum and screech sounds using oscillators.
 
 ## Play
-Simply open `bullwhip-sim.html` in any modern web browser to start driving.
+Live: **https://hakanyasli.github.io/BW9/**
+
+Or open `index.html` locally in any modern web browser. Installable as a PWA (Add to Home Screen) and playable offline once loaded.
